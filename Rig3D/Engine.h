@@ -2,7 +2,7 @@
 #include <Windows.h>
 #include "WMEventHandler.h"
 #include "Timer.h"
-
+#include "Input.h"
 
 #ifdef _WINDLL
 #define RIG3D __declspec(dllexport)
@@ -38,6 +38,7 @@ namespace Rig3D
 	private:
 		WMEventHandler* mEventHandler;
 		Timer*			mTimer;
+		Input*			mInput;
 		IRenderer*		mRenderer;
 		bool			mShouldQuit;
 

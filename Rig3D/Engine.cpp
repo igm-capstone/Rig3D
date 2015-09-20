@@ -13,6 +13,7 @@ Engine::Engine() : mShouldQuit(false)
 	mRenderer = &DX3D11Renderer::SharedInstance();
 	mEventHandler = &WMEventHandler::SharedInstance();
 	mTimer = &Timer::SharedInstance();
+	mInput = &Input::SharedInstance();
 }
 
 Engine::~Engine()
@@ -31,11 +32,16 @@ int Engine::Initialize(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine
 		return RIG_ERROR;
 	}
 
+	if (mInput->Initialize() == RIG_ERROR)
+	{
+		return RIG_ERROR;
+	}
+
 	mEventHandler->RegisterObserver(WM_CLOSE, this);
 	mEventHandler->RegisterObserver(WM_QUIT, this);
 	mEventHandler->RegisterObserver(WM_DESTROY, this);
 
-	return 0;
+	return RIG_SUCCESS;
 }
 
 int Engine::InitializeMainWindow(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, int showCmd, int windowWidth, int windowHeight, const char* windowCaption)
@@ -140,8 +146,10 @@ void Engine::RunScene(IScene* iScene)
 	{
 		mTimer->Update(&deltaTime);
 		mEventHandler->Update();
+		iScene->VHandleInput();
 		iScene->VUpdate(deltaTime);
 		iScene->VRender();
+		mInput->Flush();
 	}
 
 	Shutdown();

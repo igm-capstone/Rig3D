@@ -3,6 +3,7 @@
 #include "Rig3D\IScene.h"
 #include "Rig3D\DX3D11Renderer.h"
 #include "Rig3D\Transform.h"
+#include "Rig3D\Input.h"
 #include <d3d11.h>
 #include <d3dcompiler.h>
 
@@ -225,7 +226,12 @@ public:
 
 	void VHandleInput() override
 	{
-
+		Input* input = &Input::SharedInstance();
+		
+		if (input->GetKeyDown(KEYCODE_A))
+		{
+			// Do something
+		}
 	}
 };
 

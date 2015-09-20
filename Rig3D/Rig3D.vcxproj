@@ -71,6 +71,7 @@
     <ClInclude Include="DX3D11Renderer.h" />
     <ClInclude Include="dxerr.h" />
     <ClInclude Include="Engine.h" />
+    <ClInclude Include="Input.h" />
     <ClInclude Include="IRenderer.h" />
     <ClInclude Include="IScene.h" />
     <ClInclude Include="rig_defines.h" />
@@ -83,6 +84,7 @@
     <ClCompile Include="DX3D11Renderer.cpp" />
     <ClCompile Include="dxerr.cpp" />
     <ClCompile Include="Engine.cpp" />
+    <ClCompile Include="Input.cpp" />
     <ClCompile Include="IRenderer.cpp" />
     <ClCompile Include="IScene.cpp" />
     <ClCompile Include="Timer.cpp" />
