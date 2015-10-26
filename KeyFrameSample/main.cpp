@@ -493,36 +493,21 @@ public:
 		mDeviceContext->VSSetShader(mVertexShader, NULL, 0);
 		mDeviceContext->PSSetShader(mPixelShader, NULL, 0);
 
-		mDeviceContext->VSSetConstantBuffers(
-			0,
-			1,
-			&mConstantBuffer);
+		mDeviceContext->VSSetConstantBuffers(0, 1, &mConstantBuffer);
 
 		mRenderer->VBindMesh(mCubeMesh);
 
 		auto pos = mCubeTransform.GetWorldMatrix().transpose();
 		mMatrixBuffer.mWorld = pos;
-		mDeviceContext->UpdateSubresource(
-			mConstantBuffer,
-			0,
-			NULL,
-			&mMatrixBuffer,
-			0,
-			0);
+		mDeviceContext->UpdateSubresource(mConstantBuffer, 0, nullptr, &mMatrixBuffer, 0, 0);
 
 		mRenderer->VDrawIndexed(0, mCubeMesh->GetIndexCount());
 
-		auto posc = mChildTransform.GetWorldMatrix().transpose();
-		mMatrixBuffer.mWorld = posc;
-		mDeviceContext->UpdateSubresource(
-			mConstantBuffer,
-			0,
-			NULL,
-			&mMatrixBuffer,
-			0,
-			0);
+		//auto posc = mChildTransform.GetWorldMatrix().transpose();
+		//mMatrixBuffer.mWorld = posc;
+		//mDeviceContext->UpdateSubresource(mConstantBuffer, 0, nullptr, &mMatrixBuffer, 0, 0);
 
-		mRenderer->VDrawIndexed(0, mCubeMesh->GetIndexCount());
+		//mRenderer->VDrawIndexed(0, mCubeMesh->GetIndexCount());
 		
 		mRenderer->VSwapBuffers();
 	}
