@@ -48,8 +48,10 @@ public:
 
 	struct KeyFrame
 	{
-		quatf mRotation;
 		vec3f mPosition;
+		quatf mRotation;
+		vec3f mChildPosition;
+		quatf mChildRotation;
 		float mTime;
 	};
 
@@ -75,6 +77,9 @@ public:
 	TCBProperties			mTCBProperties;
 	float					mAnimationTime;
 	bool					mIsPlaying;
+
+	Transform mCubeTransform;
+	Transform mChildTransform;
 
 	MeshLibrary<LinearAllocator> mMeshLibrary;
 
@@ -107,6 +112,9 @@ public:
 		mDevice = mRenderer->GetDevice();
 		mDeviceContext = mRenderer->GetDeviceContext();
 
+		mChildTransform.mParent = &mCubeTransform;
+		mChildTransform.SetPosition(2, 2, 2);
+
 		VOnResize();
 
 		InitializeAnimation();
@@ -134,18 +142,30 @@ public:
 				continue;
 			}
 
-			float time, angle;
-			vec3f position, axis;
-			sscanf_s(line, "%f %f %f %f %f %f %f %f\n", &time, &position.x, &position.y, &position.z, &axis.x, &axis.y, &axis.z, &angle);
+			float time, angle, cangle;
+			vec3f position, cposition, axis, caxis;
+			sscanf_s(line, "%f\t| %f\t%f\t%f\t| %f\t%f\t%f\t%f\t| %f\t%f\t%f\t| %f\t%f\t%f\t%f",
+				&time, 
+				&position.x, &position.y, &position.z,
+				&axis.x, &axis.y, &axis.z, &angle,
+				&cposition.x, &cposition.y, &cposition.z,
+				&caxis.x, &caxis.y, &caxis.z, &cangle);
 			mKeyFrames[i].mTime = time;
 			mKeyFrames[i].mPosition = position;
 			mKeyFrames[i].mRotation = cliqCity::graphicsMath::normalize(quatf::angleAxis(angle * radians, axis));
+			mKeyFrames[i].mChildPosition = cposition;
+			mKeyFrames[i].mChildRotation = cliqCity::graphicsMath::normalize(quatf::angleAxis(cangle * radians, caxis));
 			i++;
 		}
 
 		file.close();
 
-		mMatrixBuffer.mWorld = mat4f::translate(mKeyFrames[0].mPosition).transpose();
+		mCubeTransform.SetPosition(mKeyFrames[0].mPosition);
+		mCubeTransform.SetRotation(cliqCity::graphicsMath::normalize(mKeyFrames[0].mRotation));
+
+		//mChildTransform.SetPosition(mKeyFrames[0].mChildPosition);
+		//mChildTransform.SetRotation(cliqCity::graphicsMath::normalize(mKeyFrames[0].mChildRotation));
+
 		mAnimationTime = 0.0f;
 		mIsPlaying = false;
 	}
@@ -299,7 +319,7 @@ public:
 	void InitializeCamera()
 	{
 		mMatrixBuffer.mProjection = mat4f::normalizedPerspectiveLH(0.25f * 3.1415926535f, mRenderer->GetAspectRatio(), 0.1f, 100.0f).transpose();
-		mMatrixBuffer.mView = mat4f::lookAtLH(vec3f(0.0, 0.0, 0.0), vec3f(0.0, 0.0, -38.0), vec3f(0.0, 1.0, 0.0)).transpose();
+		mMatrixBuffer.mView = mat4f::lookAtLH(vec3f(0.0, 0.0, 0.0), vec3f(0.0, 0.0, 10.0), vec3f(0.0, 1.0, 0.0)).transpose();
 	}
 
 	void VUpdate(double milliseconds) override
@@ -337,6 +357,12 @@ public:
 
 				mMatrixBuffer.mWorld = (cliqCity::graphicsMath::normalize(rotation)
 					.toMatrix4() * mat4f::translate(position)).transpose();
+				mCubeTransform.SetPosition(position);
+				mCubeTransform.SetRotation(cliqCity::graphicsMath::normalize(rotation));
+
+				//mChildTransform.mParent = nullptr;
+				//mChildTransform.SetPosition(position + vec3f(2, 0, 0));
+				//mChildTransform.SetRotation(cliqCity::graphicsMath::normalize(rotation));
 
 				char str[256];
 				sprintf_s(str, "Milliseconds %f", mAnimationTime);
@@ -467,6 +493,15 @@ public:
 		mDeviceContext->VSSetShader(mVertexShader, NULL, 0);
 		mDeviceContext->PSSetShader(mPixelShader, NULL, 0);
 
+		mDeviceContext->VSSetConstantBuffers(
+			0,
+			1,
+			&mConstantBuffer);
+
+		mRenderer->VBindMesh(mCubeMesh);
+
+		auto pos = mCubeTransform.GetWorldMatrix().transpose();
+		mMatrixBuffer.mWorld = pos;
 		mDeviceContext->UpdateSubresource(
 			mConstantBuffer,
 			0,
@@ -475,14 +510,20 @@ public:
 			0,
 			0);
 
-		mDeviceContext->VSSetConstantBuffers(
-			0,
-			1,
-			&mConstantBuffer);
+		mRenderer->VDrawIndexed(0, mCubeMesh->GetIndexCount());
 
-		mRenderer->VBindMesh(mCubeMesh);
+		auto posc = mChildTransform.GetWorldMatrix().transpose();
+		mMatrixBuffer.mWorld = posc;
+		mDeviceContext->UpdateSubresource(
+			mConstantBuffer,
+			0,
+			NULL,
+			&mMatrixBuffer,
+			0,
+			0);
 
 		mRenderer->VDrawIndexed(0, mCubeMesh->GetIndexCount());
+		
 		mRenderer->VSwapBuffers();
 	}
 
