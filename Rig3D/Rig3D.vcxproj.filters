@@ -66,6 +66,12 @@
     <ClInclude Include="TaskDispatch\TaskDispatcher.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Parametric.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Intersection.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Engine.cpp">

@@ -81,7 +81,9 @@
     <ClInclude Include="Graphics\Interface\IMesh.h" />
     <ClInclude Include="Graphics\Interface\IRenderer.h" />
     <ClInclude Include="Graphics\Interface\IScene.h" />
+    <ClInclude Include="Intersection.h" />
     <ClInclude Include="MeshLibrary.h" />
+    <ClInclude Include="Parametric.h" />
     <ClInclude Include="rig_defines.h" />
     <ClInclude Include="rig_graphics_api_conversions.h" />
     <ClInclude Include="TaskDispatch\Task.h" />

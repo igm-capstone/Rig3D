@@ -1,3 +1,5 @@
+#define MAX_LIGHTS 10
+
 struct Pixel
 {
 	float4 mPositionH	: SV_POSITION;
@@ -6,12 +8,15 @@ struct Pixel
 
 struct PointLight 
 {
-	float3 position;
+	float4	color;
+	float3	position;
+	float	range;
 };
 
-cbuffer pointLights		: register(b0)
+cbuffer lights	: register(b0)
 {
-	PointLight pointLight;
+	PointLight		pointLights[MAX_LIGHTS];
+	float4			ambientLight;
 }
 
 Texture2D positionMap	: register(t0);
@@ -22,15 +27,31 @@ Texture2D normalMap		: register(t3);
 SamplerState samplerState : register(s0);
 
 
+float4 CalculatePointLightColor(PointLight pointLight, float4 diffuseColor, float3 position, float3 normal, float depth)
+{
+	float3 lightDirection			= pointLight.position - position;
+	float  magnitude				= length(lightDirection);
+	lightDirection					/= magnitude;
+
+	float3 lightAttenuation		= { 0.0f, 1.0f, 0.0f };
+	float attenuation			= 1.0f / dot(lightAttenuation, float3(1.0f, magnitude, magnitude * magnitude));
+	float nDotL					= saturate(dot(normal, lightDirection));
+	return nDotL * diffuseColor * pointLight.color * attenuation;
+}
+
 float4 main(Pixel pixel) : SV_TARGET
 {
-	float4 lightColor = {1.0f, 1.0f, 1.0f, 1.0f};
-	float3 lightDirection = normalize(float3(1.0f, -1.0f, 0.5f));
-
 	float3 position = positionMap.Sample(samplerState, pixel.mUV).xyz;
-	float depth = depthMap.Sample(samplerState, pixel.mUV).r;
-	float4 color = diffuseMap.Sample(samplerState, pixel.mUV);
-	float3 normal = normalize(normalMap.Sample(samplerState, pixel.mUV) * 0.5f - 1.0f).xyz;
+	float depth		= depthMap.Sample(samplerState, pixel.mUV).r;
+	float4 color	= diffuseMap.Sample(samplerState, pixel.mUV);
+	float3 normal = normalize(normalMap.Sample(samplerState, pixel.mUV).xyz);
 
-	return color * saturate(dot(-lightDirection, normal));
+	float4 diffuseColor = { 0.0f, 0.0f, 0.0f, 0.0f };
+	[unroll]
+	for (int i = 0; i < MAX_LIGHTS; i++)
+	{
+		diffuseColor += CalculatePointLightColor(pointLights[i], color, position, normal, depth);
+	}
+
+	return ambientLight + diffuseColor;
 }

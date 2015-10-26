@@ -27,6 +27,6 @@ PS_OUT main(Pixel pixel)
 	output.position = float4(pixel.mPositionW, 1.0f);
 	output.depth	= float4(pixel.mPositionH.z / pixel.mPositionH.w, 0.0f, 0.0f, 0.0);
 	output.color	= color;
-	output.normal = normalize(float4(pixel.mNormal, 0.0f)) * 0.5f + 0.5f;
+	output.normal	= normalize(float4(pixel.mNormal, 0.0f));
 	return output;
 }

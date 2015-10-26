@@ -75,7 +75,7 @@ public:
 	struct SceneNode
 	{
 		Transform mTransform;
-		vec3f	  mColor;
+		vec4f	  mColor;
 		IMesh*	  mMesh;
 	};
 
@@ -201,18 +201,17 @@ public:
 		mMouseX = 0.0f;
 		mMouseY = 0.0f;
 
+		std::time_t now;
+		std::srand((unsigned int)std::time(&now));
+
 		InitializeGeometry();
 		InitializeShaders();
 		InitializeCamera();
-
-		std::time_t now;
-		std::srand((unsigned int)std::time(&now));
 	}
 
 	void InitializeGeometry()
 	{
 		OBJResource<Vertex4> resource ("Models\\Sphere.obj");
-		resource.mCalculateTangents = true;
 		mMeshLibrary.LoadMesh(&mCubeMesh, mRenderer, resource);
 
 		SampleVertex qVertices[4];
@@ -243,7 +242,7 @@ public:
 
 		for (int i = 0; i < NODE_COUNT; i++) {
 			mSceneNodes[i].mMesh = mCubeMesh;
-			mSceneNodes[i].mColor = { SATURATE_RANDOM, SATURATE_RANDOM, SATURATE_RANDOM };
+			mSceneNodes[i].mColor = { SATURATE_RANDOM, SATURATE_RANDOM, SATURATE_RANDOM, 1.0f };
 			mSceneNodes[i].mTransform.mPosition = { (float)(rand() % 10) - 5.0f, (float)(rand() % 10) - 5.0f, (float)(rand() % 5) };
 		}
 
@@ -266,7 +265,7 @@ public:
 			};
 
 			// Load Vertex Shader --------------------------------------
-			D3DReadFileToBlob(L"ModelVertexShader.cso", &vsBlob);
+			D3DReadFileToBlob(L"SphereVertexShader.cso", &vsBlob);
 
 			// Create the shader on the device
 			mDevice->CreateVertexShader(
@@ -289,7 +288,7 @@ public:
 			vsBlob->Release();
 
 			// Load Pixel Shader ---------------------------------------
-			D3DReadFileToBlob(L"ModelPixelShader.cso", &psBlob);
+			D3DReadFileToBlob(L"SpherePixelShader.cso", &psBlob);
 
 			// Create the shader on the device
 			mDevice->CreatePixelShader(
@@ -314,7 +313,7 @@ public:
 
 			// Constant buffers ----------------------------------------
 			D3D11_BUFFER_DESC cBufferTransformDesc;
-			cBufferTransformDesc.ByteWidth = sizeof(mMatrixBuffer);
+			cBufferTransformDesc.ByteWidth = sizeof(SampleMatrixBuffer);
 			cBufferTransformDesc.Usage = D3D11_USAGE_DEFAULT;
 			cBufferTransformDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 			cBufferTransformDesc.CPUAccessFlags = 0;
@@ -355,7 +354,7 @@ public:
 				{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,		0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 			};
 
-			D3DReadFileToBlob(L"QuadVertexShader.cso", &vsBlob);
+			D3DReadFileToBlob(L"BlurVertexShader.cso", &vsBlob);
 
 			mDevice->CreateVertexShader(
 				vsBlob->GetBufferPointer(),
@@ -374,7 +373,7 @@ public:
 
 			vsBlob->Release();
 
-			D3DReadFileToBlob(L"QuadPixelShader.cso", &psBlob);
+			D3DReadFileToBlob(L"BlurPixelShader.cso", &psBlob);
 
 			mDevice->CreatePixelShader(
 				psBlob->GetBufferPointer(),
@@ -384,15 +383,15 @@ public:
 
 			psBlob->Release();
 
-			D3D11_BUFFER_DESC bufferDesc;
-			bufferDesc.ByteWidth = sizeof(vec2f) * OFFSET_COUNT;
-			bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-			bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-			bufferDesc.CPUAccessFlags = 0;
-			bufferDesc.MiscFlags = 0;
-			bufferDesc.StructureByteStride = 0;
+			D3D11_BUFFER_DESC blurBufferDesc;
+			blurBufferDesc.ByteWidth = sizeof(BlurBuffer);
+			blurBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+			blurBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+			blurBufferDesc.CPUAccessFlags = 0;
+			blurBufferDesc.MiscFlags = 0;
+			blurBufferDesc.StructureByteStride = 0;
 
-			mDevice->CreateBuffer(&bufferDesc, NULL, &mBlurBuffer);
+			mDevice->CreateBuffer(&blurBufferDesc, NULL, &mBlurBuffer);
 		}
 
 		// Motion Blur Shaders 

@@ -9,10 +9,10 @@ struct Pixel
 
 cbuffer color : register(b0)
 {
-	float3 color;
+	float4 color;
 }
 
 float4 main(Pixel pixel) : SV_TARGET
 {
-	return float4(color, 1.0f);
+	return color;
 }

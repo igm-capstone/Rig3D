@@ -6,7 +6,7 @@ struct Pixel
 
 cbuffer blurParameters : register(b0)
 {
-	float2 uvOffsets[12];	// 4 byte float * 2 * 12 = 32
+	float2 uvOffsets[12];	// 4 * 2 * 12 = 96
 }
 
 Texture2D sceneTexture		: register(t0);
