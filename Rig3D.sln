@@ -12,9 +12,6 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Memory", "Memory\Memory\Memory.vcxproj", "{09A0A24C-6BE9-44BA-9FB9-6E8D5121F404}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "KeyFrameSample", "KeyFrameSample\KeyFrameSample.vcxproj", "{9DD363FA-2329-41A0-8372-0A712E9789D6}"
-	ProjectSection(ProjectDependencies) = postProject
-		{3C394EA0-5A8B-4A6D-B8B8-F28E73A98A07} = {3C394EA0-5A8B-4A6D-B8B8-F28E73A98A07}
-	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Sample", "Sample", "{60C00797-6723-4DEE-BF7D-718FAA7AD5E6}"
 EndProject
@@ -29,6 +26,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DeferredLightingSample", "DeferredLightingSample\DeferredLightingSample.vcxproj", "{516FE024-573D-4EC3-A2ED-2F952DCF9D39}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BilliardsSample", "BilliardsSample\BilliardsSample.vcxproj", "{0AD60D80-C1E4-45F8-8BA2-67F0DABC0E39}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TransformSample", "TransformSample\TransformSample.vcxproj", "{1FAC2674-8584-416F-8929-03C6F129F77E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -102,6 +101,14 @@ Global
 		{0AD60D80-C1E4-45F8-8BA2-67F0DABC0E39}.Release|Win32.Build.0 = Release|Win32
 		{0AD60D80-C1E4-45F8-8BA2-67F0DABC0E39}.Release|x64.ActiveCfg = Release|x64
 		{0AD60D80-C1E4-45F8-8BA2-67F0DABC0E39}.Release|x64.Build.0 = Release|x64
+		{1FAC2674-8584-416F-8929-03C6F129F77E}.Debug|Win32.ActiveCfg = Debug|Win32
+		{1FAC2674-8584-416F-8929-03C6F129F77E}.Debug|Win32.Build.0 = Debug|Win32
+		{1FAC2674-8584-416F-8929-03C6F129F77E}.Debug|x64.ActiveCfg = Debug|x64
+		{1FAC2674-8584-416F-8929-03C6F129F77E}.Debug|x64.Build.0 = Debug|x64
+		{1FAC2674-8584-416F-8929-03C6F129F77E}.Release|Win32.ActiveCfg = Release|Win32
+		{1FAC2674-8584-416F-8929-03C6F129F77E}.Release|Win32.Build.0 = Release|Win32
+		{1FAC2674-8584-416F-8929-03C6F129F77E}.Release|x64.ActiveCfg = Release|x64
+		{1FAC2674-8584-416F-8929-03C6F129F77E}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -116,5 +123,6 @@ Global
 		{E0B52AE7-E160-4D32-BF3F-910B785E5A8E} = {4D698D34-0472-4FEA-A19D-559FBA345066}
 		{516FE024-573D-4EC3-A2ED-2F952DCF9D39} = {60C00797-6723-4DEE-BF7D-718FAA7AD5E6}
 		{0AD60D80-C1E4-45F8-8BA2-67F0DABC0E39} = {60C00797-6723-4DEE-BF7D-718FAA7AD5E6}
+		{1FAC2674-8584-416F-8929-03C6F129F77E} = {60C00797-6723-4DEE-BF7D-718FAA7AD5E6}
 	EndGlobalSection
 EndGlobal
