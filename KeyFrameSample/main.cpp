@@ -200,57 +200,57 @@ public:
 		uint16_t indices[INDEX_COUNT];
 		// Front Face
 		indices[0] = 0;
-		indices[1] = 1;
-		indices[2] = 2;
+		indices[1] = 2;
+		indices[2] = 1;
 
 		indices[3] = 2;
-		indices[4] = 3;
-		indices[5] = 0;
+		indices[4] = 0;
+		indices[5] = 3;
 
 		// Right Face
 		indices[6] = 1;
-		indices[7] = 5;
-		indices[8] = 6;
+		indices[7] = 6;
+		indices[8] = 5;
 
 		indices[9] = 6;
-		indices[10] = 2;
-		indices[11] = 1;
+		indices[10] = 1;
+		indices[11] = 2;
 
 		// Back Face
 		indices[12] = 5;
-		indices[13] = 4;
-		indices[14] = 7;
+		indices[13] = 7;
+		indices[14] = 4;
 
 		indices[15] = 7;
-		indices[16] = 6;
-		indices[17] = 5;
+		indices[16] = 5;
+		indices[17] = 6;
 
 		// Left Face
 		indices[18] = 4;
-		indices[19] = 0;
-		indices[20] = 3;
+		indices[19] = 3;
+		indices[20] = 0;
 
 		indices[21] = 3;
-		indices[22] = 7;
-		indices[23] = 4;
+		indices[22] = 4;
+		indices[23] = 7;
 
 		// Top Face
 		indices[24] = 4;
-		indices[25] = 5;
-		indices[26] = 1;
+		indices[25] = 1;
+		indices[26] = 5;
 
 		indices[27] = 1;
-		indices[28] = 0;
-		indices[29] = 4;
+		indices[28] = 4;
+		indices[29] = 0;
 
 		// Bottom Face
 		indices[30] = 3;
-		indices[31] = 2;
-		indices[32] = 6;
+		indices[31] = 6;
+		indices[32] = 2;
 
 		indices[33] = 6;
-		indices[34] = 7;
-		indices[35] = 3;
+		indices[34] = 3;
+		indices[35] = 7;
 
 		mMeshLibrary.NewMesh(&mCubeMesh, mRenderer);
 		mRenderer->VSetMeshVertexBufferData(mCubeMesh, vertices, sizeof(SampleVertex) * VERTEX_COUNT, sizeof(SampleVertex), GPU_MEMORY_USAGE_STATIC);
@@ -503,11 +503,11 @@ public:
 
 		mRenderer->VDrawIndexed(0, mCubeMesh->GetIndexCount());
 
-		//auto posc = mChildTransform.GetWorldMatrix().transpose();
-		//mMatrixBuffer.mWorld = posc;
-		//mDeviceContext->UpdateSubresource(mConstantBuffer, 0, nullptr, &mMatrixBuffer, 0, 0);
+		auto posc = mChildTransform.GetWorldMatrix().transpose();
+		mMatrixBuffer.mWorld = posc;
+		mDeviceContext->UpdateSubresource(mConstantBuffer, 0, nullptr, &mMatrixBuffer, 0, 0);
 
-		//mRenderer->VDrawIndexed(0, mCubeMesh->GetIndexCount());
+		mRenderer->VDrawIndexed(0, mCubeMesh->GetIndexCount());
 		
 		mRenderer->VSwapBuffers();
 	}

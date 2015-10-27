@@ -74,7 +74,7 @@ mat4f Transform::GetWorldMatrix()
 	mat4f scale			= mat4f::scale(mScale);
 
 	mLocalMatrix = scale * rotation * translation;
-	mWorldMatrix = mParent == nullptr ? mLocalMatrix : mParent->GetWorldMatrix() * mLocalMatrix;
+	mWorldMatrix = mParent == nullptr ? mLocalMatrix : mLocalMatrix * mParent->GetWorldMatrix();
 
 	return mWorldMatrix;
 }
