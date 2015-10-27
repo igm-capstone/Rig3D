@@ -243,10 +243,10 @@ public:
 		for (int i = 0; i < NODE_COUNT; i++) {
 			mSceneNodes[i].mMesh = mCubeMesh;
 			mSceneNodes[i].mColor = { SATURATE_RANDOM, SATURATE_RANDOM, SATURATE_RANDOM, 1.0f };
-			mSceneNodes[i].mTransform.mPosition = { (float)(rand() % 10) - 5.0f, (float)(rand() % 10) - 5.0f, (float)(rand() % 5) };
+			mSceneNodes[i].mTransform.SetPosition((float)(rand() % 10) - 5.0f, (float)(rand() % 10) - 5.0f, (float)(rand() % 5));
 		}
 
-		mCamera.mPosition = { 0.0f, 0.0, -10.0f };
+		mCamera.SetPosition( 0.0f, 0.0, -10.0f );
 }
 
 	void InitializeShaders()
@@ -449,21 +449,27 @@ public:
 		mMouseX = mousePosition.x;
 		mMouseY = mousePosition.y;
 
+		vec3f position = mCamera.GetPosition();
 		if (Input::SharedInstance().GetKey(KEYCODE_W)) {
-			mCamera.mPosition += mCamera.GetForward() * CAMERA_SPEED;
+			position += mCamera.GetForward() * CAMERA_SPEED;
+			mCamera.SetPosition(position);
 		}
 
 		if (Input::SharedInstance().GetKey(KEYCODE_A)) {
-			mCamera.mPosition += mCamera.GetRight() * -CAMERA_SPEED;
+			position += mCamera.GetRight() * -CAMERA_SPEED;
+			mCamera.SetPosition(position);
 		}
 
 		if (Input::SharedInstance().GetKey(KEYCODE_D)) {
-			mCamera.mPosition += mCamera.GetRight() * CAMERA_SPEED;
+			position += mCamera.GetRight() * CAMERA_SPEED;
+			mCamera.SetPosition(position);
 		}
 
 		if (Input::SharedInstance().GetKey(KEYCODE_S)) {
-			mCamera.mPosition += mCamera.GetForward() * -CAMERA_SPEED;
-		}		
+			position += mCamera.GetForward() * -CAMERA_SPEED;
+			mCamera.SetPosition(position);
+		}
+
 
 		if (Input::SharedInstance().GetKey(KEYCODE_1)) {
 			mBlurType = BLUR_TYPE_NONE;

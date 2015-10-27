@@ -5,13 +5,16 @@
 using namespace Rig3D;
 
 Transform::Transform() : 
-mPosition(0.0, 0.0, 0.0), 
-mRotation(0.0, 0.0, 0.0), 
-mScale(1.0, 1.0, 1.0),
-mParent(nullptr),
-mForward(0.0, 0.0, 1.0), 
-mUp(0.0, 1.0, 0.0), 
-mRight(1.0, 0.0, 0.0)
+	mWorldMatrix(1.0f),
+	mLocalMatrix(1.0f),
+	mRotation(1.0f, 0.0f, 0.0f, 0.0f),
+	mPosition(0.0f, 0.0f, 0.0f), 
+	mScale(1.0f, 1.0f, 1.0f),
+	mForward(0.0f, 0.0f, 1.0f),
+	mUp(0.0f, 1.0f, 0.0f),
+	mRight(1.0f, 0.0f, 0.0f),
+	mParent(nullptr),
+	mIsDirty(false)
 {
 }
 
@@ -49,17 +52,20 @@ void Transform::MoveRight()
 
 void Transform::RotatePitch(float pitch)
 {
-	mRotation.x += pitch;
+	mRotation *= quatf::rollPitchYaw(0.0f, pitch, 0.0f);
+	mIsDirty = true;
 }
 
 void Transform::RotateYaw(float yaw)
 {
-	mRotation.y += yaw;
+	mRotation *= quatf::rollPitchYaw(0.0f, 0.0f, yaw);
+	mIsDirty = true;
 }
 
 void Transform::RotateRoll(float roll)
 {
-	mRotation.z += roll;
+	mRotation *= quatf::rollPitchYaw(roll, 0.0f, 0.0f);
+	mIsDirty = true;
 }
 
 mat4f Transform::GetWorldMatrix()
@@ -70,7 +76,7 @@ mat4f Transform::GetWorldMatrix()
 	}
 
 	mat4f translation	= mat4f::translate(mPosition);
-	mat4f rotation		= quatf::rollPitchYaw(mRotation.z, mRotation.x, mRotation.y).toMatrix4();
+	mat4f rotation		= mRotation.toMatrix4();
 	mat4f scale			= mat4f::scale(mScale);
 
 	mLocalMatrix = scale * rotation * translation;
@@ -81,22 +87,22 @@ mat4f Transform::GetWorldMatrix()
 
 mat3f Transform::GetRotationMatrix()
 {
-	return quatf::rollPitchYaw(mRotation.z, mRotation.x, mRotation.y).toMatrix3();
+	return mRotation.toMatrix3();
 }
 
 vec3f Transform::GetForward()
 {
-	return quatf::rollPitchYaw(mRotation.z, mRotation.x, mRotation.y) * vec3f(0.0, 0.0, 1.0);
+	return mRotation * vec3f(0.0, 0.0, 1.0);
 }
 
 vec3f Transform::GetUp()
 {
-	return quatf::rollPitchYaw(mRotation.z, mRotation.x, mRotation.y) * vec3f(0.0, 1.0, 0.0);
+	return mRotation * vec3f(0.0, 1.0, 0.0);
 }
 
 vec3f Transform::GetRight()
 {
-	return quatf::rollPitchYaw(mRotation.z, mRotation.x, mRotation.y) * vec3f(1.0, 0.0, 0.0);
+	return mRotation * vec3f(1.0, 0.0, 0.0);
 }
 
 bool Transform::IsDirty() const
@@ -104,19 +110,19 @@ bool Transform::IsDirty() const
 	return mIsDirty || (mParent != nullptr && mParent->IsDirty());
 }
 
-vec3f Transform::GetPosition() const
-{
-	return mPosition;
-}
-
-vec3f Transform::GetRotation() const
+quatf Transform::GetRotation() const
 {
 	return mRotation;
 }
 
-quatf Transform::GetRowPitchYaw() const
+vec3f Transform::GetRollPitchYaw() const
 {
-	return quatf::rollPitchYaw(mRotation.z, mRotation.x, mRotation.y);
+	return mRotation.toEuler();
+}
+
+vec3f Transform::GetPosition() const
+{
+	return mPosition;
 }
 
 vec3f Transform::GetScale() const
@@ -124,48 +130,28 @@ vec3f Transform::GetScale() const
 	return mScale;
 }
 
+void Transform::SetRotation(const quatf& rotation)
+{
+	mRotation.w = rotation.w;
+	mRotation.v.x = rotation.v.x;
+	mRotation.v.y = rotation.v.y;
+	mRotation.v.z = rotation.v.z;
+
+	mIsDirty = true;
+}
+
+void Transform::SetRotation(const vec3f& euler)
+{
+	mRotation = quatf::rollPitchYaw(euler.z, euler.x, euler.y);
+
+	mIsDirty = true;
+}
+
 void Transform::SetPosition(const vec3f& position)
 {
 	mPosition.x = position.x;
 	mPosition.y = position.y;
 	mPosition.z = position.z;
-
-	mIsDirty = true;
-}
-
-void Transform::SetRotation(const vec3f& rotation)
-{
-	mRotation.x = rotation.x;
-	mRotation.y = rotation.y;
-	mRotation.z = rotation.z;
-
-	mIsDirty = true;
-}
-
-void Transform:: SetRotation(const quatf& rotation)
-{
-	//vec4f q = { rotation.w, rotation.v.x, rotation.v.y, rotation.v.z };
-
-	//mRotation.x = atan2(2 * (q[0] * q[1] + q[2] * q[3]), 1 - 2 * (q[1] * q[1] + q[2] * q[2]));
-	//mRotation.y = asin(2 * (q[0] * q[2] - q[1] * q[3]));
-	//mRotation.z = atan2(2 * (q[0] * q[3] + q[1] * q[2]), 1 - 2 * (q[2] * q[2] + q[3] * q[3]));
-
-	auto w = rotation.w, x = rotation.v.x, y = rotation.v.y, z = rotation.v.z;
-
-	auto sp = -2.0f * (y*z - w*x);
-
-	if (fabs(sp) > 0.9999f)
-	{
-		mRotation.x = 1.570796f * sp;
-		mRotation.y = atan2(-x*z + w*y, 0.5f - y*y - z*z);
-		mRotation.z = 0.0f;
-	}
-	else
-	{
-		mRotation.x = asin(sp);
-		mRotation.y = atan2(x*z + w*y, 0.5f - x*x - y*y);
-		mRotation.z = atan2(x*y + w*z, 0.5f - x*x - z*z);
-	}
 
 	mIsDirty = true;
 }
@@ -179,20 +165,18 @@ void Transform::SetScale(const vec3f& scale)
 	mIsDirty = true;
 }
 
+void Transform::SetRotation(const float x, const float y, const float z)
+{
+	mRotation = quatf::rollPitchYaw(z, x, y);
+
+	mIsDirty = true;
+}
+
 void Transform::SetPosition(const float x, const float y, const float z)
 {
 	mPosition.x = x;
 	mPosition.y = y;
 	mPosition.z = z;
-
-	mIsDirty = true;
-}
-
-void Transform::SetRotation(const float x, const float y, const float z)
-{
-	mRotation.x = x;
-	mRotation.y = y;
-	mRotation.z = z;
 
 	mIsDirty = true;
 }

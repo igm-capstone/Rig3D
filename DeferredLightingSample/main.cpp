@@ -550,7 +550,7 @@ public:
 
 		// Camera
 		{
-			mMVP.View = mat4f::lookAtLH(mSceneObjects[4].mTransform.mPosition - vec3f(0.0f, 0.0f, 1.0f), vec3f(0.0f, 15.0f, -10.0f), vec3f(0.0f, 1.0f, 0.0f)).transpose();
+			mMVP.View = mat4f::lookAtLH(mSceneObjects[4].mTransform.GetPosition() - vec3f(0.0f, 0.0f, 1.0f), vec3f(0.0f, 15.0f, -10.0f), vec3f(0.0f, 1.0f, 0.0f)).transpose();
 			mMVP.Projection = mat4f::normalizedPerspectiveLH(0.25f * PI, mRenderer->GetAspectRatio(), 0.1f, 100.0f).transpose();
 		}
 	}
@@ -657,24 +657,24 @@ public:
 	{
 		vec4f color = { 1.0f, 1.0f, 1.0f, 1.0f };
 
-		mSceneObjects[0].mTransform.mPosition = { -3.0f, 0.0f, 2.0f };
+		mSceneObjects[0].mTransform.SetPosition(-3.0f, 0.0f, 2.0f);
 		mSceneObjects[0].mColor = color;// { 1.0f, 1.0f, 0.0f, 1.0f };
 		mSceneObjects[0].mMesh = mTorusMesh;
 
-		mSceneObjects[1].mTransform.mPosition = { 3.5f, -0.1f, 1.5f };
+		mSceneObjects[1].mTransform.SetPosition(3.5f, -0.1f, 1.5f );
 		mSceneObjects[1].mColor = color; // { 1.0f, 0.0f, 1.0f, 1.0f };
 		mSceneObjects[1].mMesh = mSphereMesh;
 
-		mSceneObjects[2].mTransform.mPosition = { 1.0f, 0.0f, -2.0f };
+		mSceneObjects[2].mTransform.SetPosition(1.0f, 0.0f, -2.0f );
 		mSceneObjects[2].mColor = color;// { 0.0f, 1.0f, 1.0f, 1.0f };
 		mSceneObjects[2].mMesh = mConeMesh;
 
-		mSceneObjects[3].mTransform.mPosition = { -2.0f, 0.0f, -2.0f };
+		mSceneObjects[3].mTransform.SetPosition(-2.0f, 0.0f, -2.0f );
 		mSceneObjects[3].mColor = color; //{ 1.0f, 0.0f, 0.0f, 1.0f };
 		mSceneObjects[3].mMesh = mCubeMesh;
 
-		mSceneObjects[4].mTransform.mPosition = { 0.0f, -0.6f, 0.0f };
-		mSceneObjects[4].mTransform.mScale = vec3f(5.0f);
+		mSceneObjects[4].mTransform.SetPosition(0.0f, -0.6f, 0.0f );
+		mSceneObjects[4].mTransform.SetScale(vec3f(5.0f));
 		mSceneObjects[4].mColor = { 0.5f, 0.5f, 0.5f, 1.0f };
 		mSceneObjects[4].mMesh = mPlaneMesh;
 	}
