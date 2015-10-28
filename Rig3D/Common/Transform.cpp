@@ -105,9 +105,10 @@ vec3f Transform::GetRight()
 	return mRotation * vec3f(1.0, 0.0, 0.0);
 }
 
-bool Transform::IsDirty() const
+bool Transform::IsDirty()
 {
-	return mIsDirty || (mParent != nullptr && mParent->IsDirty());
+	mIsDirty |= (mParent != nullptr && mParent->IsDirty());
+	return mIsDirty;
 }
 
 quatf Transform::GetRotation() const
@@ -128,6 +129,11 @@ vec3f Transform::GetPosition() const
 vec3f Transform::GetScale() const
 {
 	return mScale;
+}
+
+Transform* Transform::GetParent() const
+{
+	return mParent;
 }
 
 void Transform::SetRotation(const quatf& rotation)
@@ -161,6 +167,13 @@ void Transform::SetScale(const vec3f& scale)
 	mScale.x = scale.x;
 	mScale.y = scale.y;
 	mScale.z = scale.z;
+
+	mIsDirty = true;
+}
+
+void Transform::SetParent(Transform* parent)
+{
+	mParent = parent;
 
 	mIsDirty = true;
 }

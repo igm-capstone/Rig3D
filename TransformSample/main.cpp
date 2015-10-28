@@ -5,6 +5,8 @@
 #include "Rig3D\Graphics\Interface\IMesh.h"
 #include "Rig3D\Common\Transform.h"
 #include "Memory\Memory\LinearAllocator.h"
+#include "Memory\Memory\PoolAllocator.h"
+#include <Rig3D\SceneGraph.h>
 #include "Rig3D\MeshLibrary.h"
 #include <d3d11.h>
 #include <d3dcompiler.h>
@@ -18,6 +20,9 @@ static const int VERTEX_COUNT = 8;
 static const int INDEX_COUNT = 36;
 static const float ANIMATION_DURATION = 20000.0f; // 20 Seconds
 static const int KEY_FRAME_COUNT = 25;
+static const int SCENE_GRAPH_BUFFER_SIZE = 15 * sizeof(SceneGraphNode);
+
+static char gSceneGraphBuffer[SCENE_GRAPH_BUFFER_SIZE];
 
 class Rig3DSampleScene : public IScene, public virtual IRendererDelegate
 {
@@ -61,10 +66,9 @@ public:
 	};
 
 	SampleMatrixBuffer		mMatrixBuffer;
-	IMesh*					mCubeMesh;
-	LinearAllocator			mAllocator;
 	KeyFrame				mKeyFrames[KEY_FRAME_COUNT];
 
+	IMesh*					mCubeMesh;
 	DX3D11Renderer*			mRenderer;
 	ID3D11Device*			mDevice;
 	ID3D11DeviceContext*	mDeviceContext;
@@ -78,12 +82,24 @@ public:
 	float					mAnimationTime;
 	bool					mIsPlaying;
 
-	Transform mCubeTransform;
-	Transform mChildTransform;
+	Transform				mCubeTransform;
+	Transform				mChildTransform;
 
+	SceneGraph				mSceneGraph;
+	LinearAllocator			mAllocator;
 	MeshLibrary<LinearAllocator> mMeshLibrary;
 
-	Rig3DSampleScene() : mAllocator(1024)
+	Rig3DSampleScene() : 
+		mCubeMesh(nullptr), 
+		mRenderer(nullptr), 
+		mDevice(nullptr), 
+		mDeviceContext(nullptr),
+		mConstantBuffer(nullptr),
+		mInputLayout(nullptr),
+		mVertexShader(nullptr),
+		mPixelShader(nullptr),
+		mSceneGraph(gSceneGraphBuffer, SCENE_GRAPH_BUFFER_SIZE), 
+		mAllocator(1024)
 	{
 		mOptions.mWindowCaption = "Key Frame Sample";
 		mOptions.mWindowWidth = 800;
@@ -112,8 +128,29 @@ public:
 		mDevice = mRenderer->GetDevice();
 		mDeviceContext = mRenderer->GetDeviceContext();
 
-		mChildTransform.mParent = &mCubeTransform;
-		mChildTransform.SetPosition(2, 2, 2);
+		mSceneGraph.Add("Cube", &mCubeTransform);
+		mSceneGraph.Add("Child", &mChildTransform, &mCubeTransform);
+
+		Transform body, hips, chest, larm, rarm, lhand, rhand, lleg, rleg, rfoot, lfoot, head, dong;
+		
+		mSceneGraph.Add("Body",  &body);
+
+		mSceneGraph.Add("Chest", &chest, &body);
+		mSceneGraph.Add("Head",  &head,  &chest);
+		mSceneGraph.Add("Hips",  &hips,  &body);
+		mSceneGraph.Add("Dong",  &dong,  &hips);
+
+		mSceneGraph.Add("L_Arm",  &larm,  &chest);
+		mSceneGraph.Add("L_Hand", &lhand, &larm);
+		mSceneGraph.Add("L_Leg",  &lleg,  &hips);
+		mSceneGraph.Add("L_Foot", &lfoot, &lleg);
+		
+		mSceneGraph.Add("R_Arm",  &rarm,  &chest);
+		mSceneGraph.Add("R_Hand", &rhand, &rarm);
+		mSceneGraph.Add("R_Leg",  &rleg,  &hips);
+		mSceneGraph.Add("R_Foot", &rfoot, &rleg);
+
+		mSceneGraph.Remove(&hips);
 
 		VOnResize();
 
@@ -146,7 +183,7 @@ public:
 			{
 				break;
 			}
-
+			
 			float time, angle, cangle;
 			vec3f position, cposition, axis, caxis;
 			sscanf_s(line, "%f\t| %f\t%f\t%f\t| %f\t%f\t%f\t%f\t| %f\t%f\t%f\t| %f\t%f\t%f\t%f",
@@ -168,8 +205,8 @@ public:
 		mCubeTransform.SetPosition(mKeyFrames[0].mPosition);
 		mCubeTransform.SetRotation(cliqCity::graphicsMath::normalize(mKeyFrames[0].mRotation));
 
-		//mChildTransform.SetPosition(mKeyFrames[0].mChildPosition);
-		//mChildTransform.SetRotation(cliqCity::graphicsMath::normalize(mKeyFrames[0].mChildRotation));
+		mChildTransform.SetPosition(mKeyFrames[0].mChildPosition);
+		mChildTransform.SetRotation(cliqCity::graphicsMath::normalize(mKeyFrames[0].mChildRotation));
 
 		mAnimationTime = 0.0f;
 		mIsPlaying = false;
@@ -324,7 +361,7 @@ public:
 	void InitializeCamera()
 	{
 		mMatrixBuffer.mProjection = mat4f::normalizedPerspectiveLH(0.25f * 3.1415926535f, mRenderer->GetAspectRatio(), 0.1f, 100.0f).transpose();
-		mMatrixBuffer.mView = mat4f::lookAtLH(vec3f(0.0, 0.0, 0.0), vec3f(0.0, 0.0, -20.0), vec3f(0.0, 1.0, 0.0)).transpose();
+		mMatrixBuffer.mView = mat4f::lookAtLH(vec3f(0.0, 0.0, 0.0), vec3f(0.0, 0.0, -30.0), vec3f(0.0, 1.0, 0.0)).transpose();
 	}
 
 	void VUpdate(double milliseconds) override
@@ -334,7 +371,7 @@ public:
 		}
 		else {
 			float t = mAnimationTime / 1000.0f;
-			if (t < 9.0f) {
+			if (t < 6.0f) {
 
 				// Find key frame index
 				int i = (int)floorf(t);
@@ -344,33 +381,36 @@ public:
 
 				quatf rotation;
 				vec3f position;
+				quatf childRotation;
+				vec3f childPosition;
 
 				switch (mInterpolationMode)
 				{
 					case INTERPOLATION_MODE_LINEAR:
-						LinearInterpolation(&position, &rotation, i, u);
+						LinearInterpolation(&position, &rotation, &childPosition, &childRotation, i, u);
 						break;
 					case INTERPOLATION_MODE_CATMULL_ROM:
-						CatmullRomInterpolation(&position, &rotation, i, u);
+						CatmullRomInterpolation(&position, &rotation, &childPosition, &childRotation, i, u);
 						break;
 					case INTERPOLATION_MODE_TCB:
-						TCBInterpolation(mTCBProperties, &position, &rotation, i, u);
+						TCBInterpolation(mTCBProperties, &position, &rotation, &childPosition, &childRotation, i, u);
 						break;
 					default:
 						break;
 				}
 
-				mMatrixBuffer.mWorld = (cliqCity::graphicsMath::normalize(rotation)
-					.toMatrix4() * mat4f::translate(position)).transpose();
+				//mMatrixBuffer.mWorld = (cliqCity::graphicsMath::normalize(rotation)
+				//	.toMatrix4() * mat4f::translate(position)).transpose();
+				
 				mCubeTransform.SetPosition(position);
 				mCubeTransform.SetRotation(cliqCity::graphicsMath::normalize(rotation));
 
-				//mChildTransform.mParent = nullptr;
-				//mChildTransform.SetPosition(position + vec3f(2, 0, 0));
-				//mChildTransform.SetRotation(cliqCity::graphicsMath::normalize(rotation));
+				mChildTransform.SetPosition(childPosition);
+				mChildTransform.SetRotation(cliqCity::graphicsMath::normalize(childRotation));
 
 				char str[256];
-				sprintf_s(str, "Milliseconds %f", mAnimationTime);
+				char animType = mInterpolationMode == INTERPOLATION_MODE_LINEAR ? 'L' : mInterpolationMode == INTERPOLATION_MODE_CATMULL_ROM ? 'C' : 'T';
+				sprintf_s(str, "Milliseconds %c %f", animType, mAnimationTime);
 				mRenderer->SetWindowCaption(str);
 			}
 
@@ -392,15 +432,19 @@ public:
 		}
 	}
 
-	void LinearInterpolation(vec3f* position, quatf* rotation, int i, float u)
+	void LinearInterpolation(vec3f* position, quatf* rotation, vec3f* childPosition, quatf* childRotation, int i, float u)
 	{
 		KeyFrame& current	= mKeyFrames[i];
 		KeyFrame& after		= mKeyFrames[i + 1];
+		
 		*position			= (1 - u) * current.mPosition + after.mPosition * u;
+		*childPosition		= (1 - u) * current.mChildPosition + after.mChildPosition * u;
+
 		Slerp(rotation, current.mRotation, after.mRotation, u);
+		Slerp(childRotation, current.mChildRotation, after.mChildRotation, u);
 	}
 
-	void CatmullRomInterpolation(vec3f* position, quatf* rotation, int i, float u)
+	void CatmullRomInterpolation(vec3f* position, quatf* rotation, vec3f* childPosition, quatf* childRotation, int i, float u)
 	{
 		KeyFrame& before	= (i == 0) ? mKeyFrames[i] : mKeyFrames[i - 1];
 		KeyFrame& current	= mKeyFrames[i];
@@ -417,10 +461,17 @@ public:
 		vec4f T = { 1, u, u * u, u * u * u };
 
 		*position = T * CR * P;
+
+		mat4f cP = { before.mChildPosition, current.mChildPosition, after.mChildPosition, after2.mChildPosition };
+		vec4f cT = { 1, u, u * u, u * u * u };
+
+		*childPosition = cT * CR * cP;
+
 		Slerp(rotation, current.mRotation, after.mRotation, u);
+		Slerp(childRotation, current.mChildRotation, after.mChildRotation, u);
 	}
 
-	void TCBInterpolation(TCBProperties& tcb, vec3f* position, quatf* rotation, int i, float u)
+	void TCBInterpolation(TCBProperties& tcb, vec3f* position, quatf* rotation, vec3f* childPosition, quatf* childRotation, int i, float u)
 	{
 		KeyFrame& before	= (i == 0) ? mKeyFrames[i] : mKeyFrames[i - 1];
 		KeyFrame& current	= mKeyFrames[i];
@@ -430,22 +481,34 @@ public:
 		tcb.c = -1.0f;
 		tcb.b = -1.0f;
 
+		mat4f H = {
+			1.0f, 0.0f, 0.0f, 0.0f,
+			0.0f, 1.0f, 0.0f, 0.0f,
+			-3.0f, -2.0f, -1.0f, 3.0f,
+			2.0f, 1.0f, 1.0f, -2.0f };
+
+		vec4f T = { 1, u, u * u, u * u * u };
+
 		vec3f vIn = ((1.0f - tcb.t) * (1.0f + tcb.b) * (1.0f - tcb.c) * 0.5f) * (current.mPosition - before.mPosition) +
 			((1.0f - tcb.t) * (1.0f - tcb.b) * (1.0f + tcb.c) * 0.5f) * (after.mPosition - current.mPosition);
 		vec3f vOut = ((1.0f - tcb.t) * (1.0f + tcb.b) * (1.0f + tcb.c) * 0.5f) * (current.mPosition - before.mPosition) +
 			((1.0f - tcb.t) * (1.0f - tcb.b) * (1.0f - tcb.c) * 0.5f) * (after.mPosition - current.mPosition);
 
-		mat4f H = {
-			1.0f, 0.0f, 0.0f, 0.0f,
-			0.0f, 1.0f, 0.0f, 0.0f,
-		   -3.0f, -2.0f, -1.0f, 3.0f,
-			2.0f, 1.0f, 1.0f, -2.0f};
-
 		mat4f P = { current.mPosition, vOut, vIn, after.mPosition };
-		vec4f T = { 1, u, u * u, u * u * u };
 
 		*position = T * H * P;
+
+		vec3f cvIn = ((1.0f - tcb.t) * (1.0f + tcb.b) * (1.0f - tcb.c) * 0.5f) * (current.mChildPosition - before.mChildPosition) +
+			((1.0f - tcb.t) * (1.0f - tcb.b) * (1.0f + tcb.c) * 0.5f) * (after.mChildPosition - current.mChildPosition);
+		vec3f cvOut = ((1.0f - tcb.t) * (1.0f + tcb.b) * (1.0f + tcb.c) * 0.5f) * (current.mChildPosition - before.mChildPosition) +
+			((1.0f - tcb.t) * (1.0f - tcb.b) * (1.0f - tcb.c) * 0.5f) * (after.mChildPosition - current.mChildPosition);
+
+		mat4f cP = { current.mChildPosition, cvOut, cvIn, after.mChildPosition };
+
+		*childPosition = T * H * cP;
+
 		Slerp(rotation, current.mRotation, after.mRotation, u);
+		Slerp(childRotation, current.mChildRotation, after.mChildRotation, u);
 	}
 
 	void Slerp(quatf* out, quatf q0, quatf q1, const float u)

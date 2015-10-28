@@ -86,6 +86,7 @@
     <ClInclude Include="Parametric.h" />
     <ClInclude Include="rig_defines.h" />
     <ClInclude Include="rig_graphics_api_conversions.h" />
+    <ClInclude Include="SceneGraph.h" />
     <ClInclude Include="TaskDispatch\Task.h" />
     <ClInclude Include="TaskDispatch\TaskDispatcher.h" />
   </ItemGroup>
@@ -103,6 +104,7 @@
     <ClCompile Include="Graphics\Interface\IRenderer.cpp" />
     <ClCompile Include="Graphics\Interface\IScene.cpp" />
     <ClCompile Include="Options.h" />
+    <ClCompile Include="SceneGraph.cpp" />
     <ClCompile Include="TaskDispatch\TaskDispatcher.cpp" />
   </ItemGroup>
   <ItemGroup>

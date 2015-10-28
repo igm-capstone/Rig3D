@@ -29,17 +29,19 @@ namespace Rig3D
 		vec3f GetUp();
 		vec3f GetRight();
 
-		inline bool IsDirty() const;
+		inline bool IsDirty();
 
 		inline quatf GetRotation() const;
 		inline vec3f GetRollPitchYaw() const;
 		inline vec3f GetPosition() const;
 		inline vec3f GetScale() const;
+		inline Transform* GetParent() const;
 
 		inline void SetRotation(const quatf& rotation);
 		inline void SetRotation(const vec3f& euler);
 		inline void SetPosition(const vec3f& position);
 		inline void SetScale(const vec3f& scale);
+		inline void SetParent(Transform* parent);
 
 		inline void SetRotation(const float x, const float y, const float z);
 		inline void SetPosition(const float x, const float y, const float z);
