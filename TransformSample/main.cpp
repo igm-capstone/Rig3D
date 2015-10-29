@@ -211,8 +211,7 @@ public:
 			mTransforms[i].SetRotation(normalize(mKeyFrames[0].mRotations[i]));
 		}
 
-		mAnimationTime = 0.0f;
-		mIsPlaying = false;
+		mIsPlaying = true;
 
 		mAnimInfo.mTCBProperties = &mTCBProperties;
 		mAnimInfo.mKeyFrames = mKeyFrames;
@@ -367,7 +366,7 @@ public:
 	void InitializeCamera()
 	{
 		mMatrixBuffer.mProjection = mat4f::normalizedPerspectiveLH(0.25f * 3.1415926535f, mRenderer->GetAspectRatio(), 0.1f, 100.0f).transpose();
-		mMatrixBuffer.mView = mat4f::lookAtLH(vec3f(0.0, 0.0, 0.0), vec3f(0.0, 0.0, -30.0), vec3f(0.0, 1.0, 0.0)).transpose();
+		mMatrixBuffer.mView = mat4f::lookAtLH(vec3f(5.0, 0.0, 0.0), vec3f(5.0, 0.0, -35.0), vec3f(0.0, 1.0, 0.0)).transpose();
 	}
 
 	int zeroToFour[5] = { 0, 1, 2, 3, 4 };
@@ -388,58 +387,61 @@ public:
 		}
 		else {
 			float time = mAnimationTime / 1000.0f;
-			if (time < 6.0f) {
-
-				// Find key frame index
-				mAnimInfo.mFrameIndex = (int)floorf(time);
-
-				// Find fractional portion
-				mAnimInfo.mFrameFraction = (time - mAnimInfo.mFrameIndex);
-				mAnimInfo.mInterpolationMode = mInterpolationMode;
-
-				quatf rotation;
-				vec3f position;
-
-				for (int i = 0; i < TRANSFORM_COUNT; i++)
-				{
-					mTasksData[i].mStream.in[0] = &zeroToFour[i];
-					mTasksData[i].mStream.in[1] = &mAnimInfo;
-					mTasksData[i].mStream.out[0] = mTransforms;
-
-					mTaskIds[i] = mTaskDispatcher.AddTask(mTasksData[i], InterpolateTransform);
-
-					//switch (mInterpolationMode)
-					//{
-					//	case INTERPOLATION_MODE_LINEAR:
-					//			LinearInterpolation(mKeyFrames, &position, &rotation, i, k, u);
-					//		break;
-					//	case INTERPOLATION_MODE_CATMULL_ROM:
-					//			CatmullRomInterpolation(mKeyFrames, &position, &rotation, i, k, u);
-					//		break;
-					//	case INTERPOLATION_MODE_TCB:
-					//			TCBInterpolation(mKeyFrames, mTCBProperties, &position, &rotation, i, k, u);
-					//		break;
-					//	default:
-					//		break;
-					//}
-
-					//mTransforms[i].SetPosition(position);
-					//mTransforms[i].SetRotation(normalize(rotation));
-				}
-
-				//mTaskDispatcher.Synchronize();
-
-				char str[256];
-				char animType = mInterpolationMode == INTERPOLATION_MODE_LINEAR ? 'L' : mInterpolationMode == INTERPOLATION_MODE_CATMULL_ROM ? 'C' : 'T';
-				sprintf_s(str, "Milliseconds %c %f", animType, mAnimationTime);
-				mRenderer->SetWindowCaption(str);
+			if (time >= 6.0f) {
+				mAnimationTime = time = 0;
 			}
+
+			// Find key frame index
+			mAnimInfo.mFrameIndex = (int)floorf(time);
+
+			// Find fractional portion
+			mAnimInfo.mFrameFraction = (time - mAnimInfo.mFrameIndex);
+			mAnimInfo.mInterpolationMode = mInterpolationMode;
+
+			quatf rotation;
+			vec3f position;
+
+			for (int i = 0; i < TRANSFORM_COUNT; i++)
+			{
+				mTasksData[i].mStream.in[0] = &zeroToFour[i];
+				mTasksData[i].mStream.in[1] = &mAnimInfo;
+				mTasksData[i].mStream.out[0] = mTransforms;
+
+				mTaskIds[i] = mTaskDispatcher.AddTask(mTasksData[i], InterpolateTransform);
+
+				//switch (mInterpolationMode)
+				//{
+				//	case INTERPOLATION_MODE_LINEAR:
+				//			LinearInterpolation(mKeyFrames, &position, &rotation, i, k, u);
+				//		break;
+				//	case INTERPOLATION_MODE_CATMULL_ROM:
+				//			CatmullRomInterpolation(mKeyFrames, &position, &rotation, i, k, u);
+				//		break;
+				//	case INTERPOLATION_MODE_TCB:
+				//			TCBInterpolation(mKeyFrames, mTCBProperties, &position, &rotation, i, k, u);
+				//		break;
+				//	default:
+				//		break;
+				//}
+
+				//mTransforms[i].SetPosition(position);
+				//mTransforms[i].SetRotation(normalize(rotation));
+			}
+
+			//mTaskDispatcher.Synchronize();
+
+			char str[256];
+			char animType = mInterpolationMode == INTERPOLATION_MODE_LINEAR ? 'L' : mInterpolationMode == INTERPOLATION_MODE_CATMULL_ROM ? 'C' : 'T';
+			sprintf_s(str, "Milliseconds %c %f", animType, mAnimationTime);
+			mRenderer->SetWindowCaption(str);
+			
 
 			mAnimationTime += (float)milliseconds;	
 		}
 
 		if (Input::SharedInstance().GetKeyDown(KEYCODE_LEFT)) {
-			InitializeAnimation();
+			mAnimationTime = 0.0f;
+			mIsPlaying = false;
 		}
 
 		if (Input::SharedInstance().GetKeyDown(KEYCODE_L)) {
@@ -518,9 +520,9 @@ public:
 		KeyFrame& current	= keyFrames[k];
 		KeyFrame& after		= keyFrames[k + 1];
 
-		tcb.t = 1.0f;
-		tcb.c = 1.0f;
-		tcb.b = 1.0f;
+		tcb.t = -1.0f;
+		tcb.c = -1.0f;
+		tcb.b = -1.0f;
 
 		mat4f H = {
 			1.0f, 0.0f, 0.0f, 0.0f,
