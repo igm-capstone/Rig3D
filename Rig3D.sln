@@ -29,6 +29,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BilliardsSample", "Billiard
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TransformSample", "TransformSample\TransformSample.vcxproj", "{1FAC2674-8584-416F-8929-03C6F129F77E}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ParticlesSample", "ParticlesSample\ParticlesSample.vcxproj", "{1FAC2674-8584-416F-8929-03C6F129F77F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -109,6 +111,14 @@ Global
 		{1FAC2674-8584-416F-8929-03C6F129F77E}.Release|Win32.Build.0 = Release|Win32
 		{1FAC2674-8584-416F-8929-03C6F129F77E}.Release|x64.ActiveCfg = Release|x64
 		{1FAC2674-8584-416F-8929-03C6F129F77E}.Release|x64.Build.0 = Release|x64
+		{1FAC2674-8584-416F-8929-03C6F129F77F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{1FAC2674-8584-416F-8929-03C6F129F77F}.Debug|Win32.Build.0 = Debug|Win32
+		{1FAC2674-8584-416F-8929-03C6F129F77F}.Debug|x64.ActiveCfg = Debug|x64
+		{1FAC2674-8584-416F-8929-03C6F129F77F}.Debug|x64.Build.0 = Debug|x64
+		{1FAC2674-8584-416F-8929-03C6F129F77F}.Release|Win32.ActiveCfg = Release|Win32
+		{1FAC2674-8584-416F-8929-03C6F129F77F}.Release|Win32.Build.0 = Release|Win32
+		{1FAC2674-8584-416F-8929-03C6F129F77F}.Release|x64.ActiveCfg = Release|x64
+		{1FAC2674-8584-416F-8929-03C6F129F77F}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -124,5 +134,6 @@ Global
 		{516FE024-573D-4EC3-A2ED-2F952DCF9D39} = {60C00797-6723-4DEE-BF7D-718FAA7AD5E6}
 		{0AD60D80-C1E4-45F8-8BA2-67F0DABC0E39} = {60C00797-6723-4DEE-BF7D-718FAA7AD5E6}
 		{1FAC2674-8584-416F-8929-03C6F129F77E} = {60C00797-6723-4DEE-BF7D-718FAA7AD5E6}
+		{1FAC2674-8584-416F-8929-03C6F129F77F} = {60C00797-6723-4DEE-BF7D-718FAA7AD5E6}
 	EndGlobalSection
 EndGlobal
