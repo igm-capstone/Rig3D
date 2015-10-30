@@ -23,6 +23,19 @@
 
 using namespace Rig3D;
 
+//#define MULTICORE
+
+#ifdef MULTICORE
+#include "Rig3D\TaskDispatch\TaskDispatcher.h"
+uint8_t gTaskMemory[1024];
+#define THREAD_COUNT 4
+cliqCity::multicore::Thread threads[THREAD_COUNT];
+cliqCity::multicore::TaskData modelData[4];
+cliqCity::multicore::TaskID taskIDs[4];
+cliqCity::multicore::TaskDispatcher dispatchQueue(threads, THREAD_COUNT, gTaskMemory, 1024);
+void PerformModelLoadTask(const cliqCity::multicore::TaskData& data);
+#endif
+
 class ParticlesScene : public IScene, public virtual IRendererDelegate
 {
 public:
@@ -127,6 +140,10 @@ public:
 		mDevice = mRenderer->GetDevice();
 		mDeviceContext = mRenderer->GetDeviceContext();
 
+#ifdef MULTICORE
+		dispatchQueue.Start();
+#endif
+
 		VOnResize();
 
 		InitializeParticleSystem();
@@ -150,10 +167,10 @@ public:
 		mParticleSize = 1.0f;
 
 		// Set the number of particles to emit per second.
-		mParticlesPerSecond = 200.0f;
+		mParticlesPerSecond = 1000.0f;
 
 		// Set the maximum number of particles allowed in the particle system.
-		mMaxParticles = 5000;
+		mMaxParticles = 10000;
 
 		// Create the particle list.
 		mParticleList = new Particle[mMaxParticles];
@@ -342,14 +359,13 @@ public:
 
 	void VUpdate(double milliseconds) override
 	{
-		KillParticles();
-		EmitParticles((float)milliseconds);
-		UpdateParticles((float)milliseconds);
-		UpdateShaderResources();
+		Particles_Kill();
+		Particles_Emit((float)milliseconds);
+		Particles_Update((float)milliseconds);
 		UpdateCamera();
 	}
 
-	void EmitParticles(float frameTime)
+	void Particles_Emit(float frameTime)
 	{
 		bool emitParticle, found;
 		vec3f position;
@@ -427,7 +443,7 @@ public:
 		return;
 	}
 
-	void KillParticles()
+	void Particles_Kill()
 	{
 		int i, j;
 
@@ -452,63 +468,74 @@ public:
 		return;
 	}
 
-	void UpdateParticles(float frameTime)
+	void Particles_Update(float frameTime)
 	{
-		int i;
-
-		// Each frame we update all the particles by making them move downwards using their position, velocity, and the frame time.
-		for (i = 0; i<mCurrentParticleCount; i++)
-		{
-			mParticleList[i].position.y = mParticleList[i].position.y - (mParticleList[i].velocity * frameTime * 0.01f);
-		}
-
-		return;
-	}
-
-	void UpdateShaderResources() {
 		// Initialize vertex array to zeros at first.
 		memset(mVertices, 0, (sizeof(ParticleVertex) * mVertexCount));
 
-		int index = 0;
+#ifdef MULTICORE
+		int blockSize = mMaxParticles / THREAD_COUNT;
+		bool done[4] = { false,false,false,false };
+		for (int i = 0; i < THREAD_COUNT; i++)
+		{
+			modelData[i].mStream.out[0] = &mParticleList[i * blockSize];
+			modelData[i].mStream.out[1] = &mVertices[i * 6 * blockSize];
+			modelData[i].mStream.out[2] = &done[i];
+			modelData[i].mStream.in[0] = &blockSize;
+			modelData[i].mStream.in[1] = &frameTime;
+			modelData[i].mStream.in[2] = &mParticleSize;
+			taskIDs[i] = dispatchQueue.AddTask(modelData[i], PerformModelLoadTask);
+		}
+
+		while (!done[0] || !done[1] || !done[2] || !done[3]) std::this_thread::yield();
+#else
 		// Now build the vertex array from the particle list array.  Each particle is a quad made out of two triangles.
+		for (int i = 0; i<mCurrentParticleCount; i++)
+		{
+			mParticleList[i].position.y = mParticleList[i].position.y - (mParticleList[i].velocity * frameTime * 0.01f);
+		}
 		for (int i = 0; i < mCurrentParticleCount; i++)
 		{
+			vec4f color = vec4f(mParticleList[i].color, 1.0f);
+			int index = i * 6;
+
 			// Bottom left.
 			mVertices[index].position = mParticleList[i].position + vec4f(-mParticleSize, -mParticleSize, 0, 1);
 			mVertices[index].uv = vec2f(0.0f, 1.0f);
-			mVertices[index].color = vec4f(mParticleList[i].color, 1.0f);
+			mVertices[index].color = color;
 			index++;
 
 			// Top left.
 			mVertices[index].position = mParticleList[i].position + vec4f(-mParticleSize, mParticleSize, 0, 1);
 			mVertices[index].uv = vec2f(0.0f, 0.0f);
-			mVertices[index].color = vec4f(mParticleList[i].color, 1.0f);
+			mVertices[index].color = color;
 			index++;
 
 			// Bottom right.
 			mVertices[index].position = mParticleList[i].position + vec4f(mParticleSize, -mParticleSize, 0, 1);
 			mVertices[index].uv = vec2f(1.0f, 1.0f);
-			mVertices[index].color = vec4f(mParticleList[i].color, 1.0f);
+			mVertices[index].color = color;
 			index++;
 
 			// Bottom right.
 			mVertices[index].position = mParticleList[i].position + vec4f(mParticleSize, -mParticleSize, 0, 1);
 			mVertices[index].uv = vec2f(1.0f, 1.0f);
-			mVertices[index].color = vec4f(mParticleList[i].color, 1.0f);
+			mVertices[index].color = color;
 			index++;
 
 			// Top left.
 			mVertices[index].position = mParticleList[i].position + vec4f(-mParticleSize, mParticleSize, 0, 1);
 			mVertices[index].uv = vec2f(0.0f, 0.0f);
-			mVertices[index].color = vec4f(mParticleList[i].color, 1.0f);
+			mVertices[index].color = color;
 			index++;
 
 			// Top right.
 			mVertices[index].position = mParticleList[i].position + vec4f(mParticleSize, mParticleSize, 0, 1);
 			mVertices[index].uv = vec2f(1.0f, 0.0f);
-			mVertices[index].color = vec4f(mParticleList[i].color, 1.0f);
+			mVertices[index].color = color;
 			index++;
 		}
+#endif
 
 		D3D11_MAPPED_SUBRESOURCE mappedResource;
 		// Lock the vertex buffer.
@@ -624,5 +651,63 @@ public:
 		mAllocator.Free();
 	}
 };
+
+#ifdef MULTICORE
+void PerformModelLoadTask(const cliqCity::multicore::TaskData& data)
+{
+
+	ParticlesScene::Particle* particle = reinterpret_cast<ParticlesScene::Particle*>(data.mStream.out[0]);
+	ParticlesScene::ParticleVertex* vertices = reinterpret_cast<ParticlesScene::ParticleVertex*>(data.mStream.out[1]);
+	bool* done = reinterpret_cast<bool*>(data.mStream.out[2]);
+	int* blockSize = reinterpret_cast<int*>(data.mStream.in[0]);
+	float frameTime = *(reinterpret_cast<float*>(data.mStream.in[1]));
+	float mParticleSize = *(reinterpret_cast<float*>(data.mStream.in[2]));
+
+	for (int i = 0; i < *blockSize; i++) {
+		particle[i].position.y = particle[i].position.y - (particle[i].velocity * (frameTime) * 0.01f);
+
+		vec4f color = vec4f(particle[i].color, 1.0f);
+		int index = i * 6;
+
+		// Bottom left.
+		vertices[index].position = particle[i].position + vec4f(-mParticleSize, -mParticleSize, 0, 1);
+		vertices[index].uv = vec2f(0.0f, 1.0f);
+		vertices[index].color = color;
+		index++;
+
+		// Top left.
+		vertices[index].position = particle[i].position + vec4f(-mParticleSize, mParticleSize, 0, 1);
+		vertices[index].uv = vec2f(0.0f, 0.0f);
+		vertices[index].color = color;
+		index++;
+
+		// Bottom right.
+		vertices[index].position = particle[i].position + vec4f(mParticleSize, -mParticleSize, 0, 1);
+		vertices[index].uv = vec2f(1.0f, 1.0f);
+		vertices[index].color = color;
+		index++;
+
+		// Bottom right.
+		vertices[index].position = particle[i].position + vec4f(mParticleSize, -mParticleSize, 0, 1);
+		vertices[index].uv = vec2f(1.0f, 1.0f);
+		vertices[index].color = color;
+		index++;
+
+		// Top left.
+		vertices[index].position = particle[i].position + vec4f(-mParticleSize, mParticleSize, 0, 1);
+		vertices[index].uv = vec2f(0.0f, 0.0f);
+		vertices[index].color = color;
+		index++;
+
+		// Top right.
+		vertices[index].position = particle[i].position + vec4f(mParticleSize, mParticleSize, 0, 1);
+		vertices[index].uv = vec2f(1.0f, 0.0f);
+		vertices[index].color = color;
+		index++;
+	}
+
+	*done = true;
+}
+#endif
 
 DECLARE_MAIN(ParticlesScene);
