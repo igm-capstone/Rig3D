@@ -26,7 +26,7 @@ Pixel main(Vertex vertex)
 
 	Pixel pixel;
 	pixel.position = mul(float4(vertex.position, 1.0f), clip);
-	pixel.normal = mul(vertex.world, float4(vertex.normal, 0.0f)).xyz;
+	pixel.normal = mul(float4(vertex.normal, 0.0f), vertex.world).xyz;
 	pixel.uv = float3(vertex.uv, 0.0f + vertex.instanceID);
 	return pixel;
 }

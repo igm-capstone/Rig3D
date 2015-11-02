@@ -46,13 +46,16 @@ namespace cliqCity
 		private:
 			AtomicCounter	mTaskGeneration;
 			Signal			mTaskSignal;
+			Signal			mThreadSignal;
 			Mutex			mMemoryLock;
 			Mutex			mTaskQueueLock;
+			Mutex			mThreadLock;
 			TaskQueue		mTaskQueue;
 			TaskPool		mAllocator;
 			void*			mMemory;
 			Thread*			mThreads;
 			uint8_t			mThreadCount;
+			uint8_t			mActiveThreadCount;
 			bool			mIsPaused;
 
 			TaskID	GetTaskID(Task* task) const;

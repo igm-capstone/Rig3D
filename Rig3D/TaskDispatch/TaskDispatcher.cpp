@@ -8,6 +8,7 @@ TaskDispatcher::TaskDispatcher(Thread* threads, uint8_t threadCount, void* memor
 	mMemory(memory),
 	mThreads(threads),
 	mThreadCount(threadCount),
+	mActiveThreadCount(0),
 	mIsPaused(true)
 {
 
@@ -43,6 +44,7 @@ void TaskDispatcher::Start()
 	for (int i = 0; i < mThreadCount; i++)
 	{
 		mThreads[i] = std::thread(&TaskDispatcher::ProcessTasks, this);
+		mActiveThreadCount++;
 	}
 }
 
@@ -50,8 +52,15 @@ void TaskDispatcher::Pause()
 {
 	mIsPaused = true;
 
-	// Prompt any waiting threads to exit.
-	mTaskSignal.notify_all();
+	UniqueLock lock(mThreadLock);
+	while (mActiveThreadCount != 0)
+	{
+		// Wait until receiving exit signals from all threads
+		mThreadSignal.wait(lock);
+
+		// Prompt any waiting threads to exit.
+		mTaskSignal.notify_all();
+	}
 
 	// Finally join threads.
 	JoinThreads();
@@ -194,6 +203,10 @@ inline void TaskDispatcher::ProcessTasks()
 			FreeTask(task);
 		}
 	}
+
+	UniqueLock lock(mThreadLock);
+	mActiveThreadCount--;
+	std::notify_all_at_thread_exit(mThreadSignal, std::move(lock));
 }
 
 inline void TaskDispatcher::JoinThreads()

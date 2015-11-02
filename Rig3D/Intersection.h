@@ -142,7 +142,7 @@ int IntersectSphereSphere(const Sphere<Vector>& s0, const Sphere<Vector>& s1)
 	// Spheres are intersecting if distance is less than the sum of radii
 	Vector distance = s0.origin - s1.origin;
 	float distanceSquared = cliqCity::graphicsMath::dot(distance, distance);
-	float sumRadii = s0.radius + s1.radius;
+	float sumRadii = (s0.radius + s1.radius);
 	return (distanceSquared <= (sumRadii * sumRadii));
 }
 

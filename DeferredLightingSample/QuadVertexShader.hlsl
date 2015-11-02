@@ -1,20 +1,20 @@
 struct Vertex
 {
-	float3 mPosition	: POSITION;
-	float2 mUV			: TEXCOORD;
+	float3 position	: POSITION;
+	float2 uv		: TEXCOORD;
 };
 
 struct Pixel
 {
-	float4 mPositionH	: SV_POSITION;
-	float2 mUV			: TEXCOORD;
+	float4 position	: SV_POSITION;
+	float2 uv		: TEXCOORD;
 };
 
 Pixel main(Vertex vertex)
 {
 	Pixel pixel;
-	pixel.mPositionH = float4(vertex.mPosition, 1.0f);
-	pixel.mUV = vertex.mUV;
+	pixel.position = float4(vertex.position, 1.0f);
+	pixel.uv = vertex.uv;
 
 	return pixel;
 }

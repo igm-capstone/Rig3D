@@ -3,7 +3,6 @@
 #include "Rig3D\Graphics\Interface\IScene.h"
 #include "Rig3D\Graphics\DirectX11\DX3D11Renderer.h"
 #include "Rig3D\Graphics\Interface\IMesh.h"
-#include "Rig3D\Graphics\DirectX11\DX11Mesh.h"
 #include "Rig3D\Common\Transform.h"
 #include "Memory\Memory\LinearAllocator.h"
 #include "Rig3D\Graphics\DirectX11\DirectXTK\Inc\WICTextureLoader.h"
@@ -202,7 +201,7 @@ public:
 		mMouseY = 0.0f;
 
 		std::time_t now;
-		std::srand((unsigned int)std::time(&now));
+		std::srand(static_cast<unsigned int>(std::time(&now)));
 
 		InitializeGeometry();
 		InitializeShaders();
