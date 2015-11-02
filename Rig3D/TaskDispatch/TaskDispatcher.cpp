@@ -55,11 +55,11 @@ void TaskDispatcher::Pause()
 	UniqueLock lock(mThreadLock);
 	while (mActiveThreadCount != 0)
 	{
-		// Wait until receiving exit signals from all threads
-		mThreadSignal.wait(lock);
-
 		// Prompt any waiting threads to exit.
 		mTaskSignal.notify_all();
+
+		// Wait until receiving exit signals from all threads
+		mThreadSignal.wait(lock);
 	}
 
 	// Finally join threads.
