@@ -4,9 +4,9 @@
 #include "Rig3D\Graphics\DirectX11\DX3D11Renderer.h"
 #include "Rig3D\Graphics\Interface\IMesh.h"
 #include "Rig3D\Common\Transform.h"
-#include "Memory\Memory\LinearAllocator.h"
+#include "Memory\Memory\Memory.h"
 #include "Rig3D\Graphics\DirectX11\DirectXTK\Inc\WICTextureLoader.h"
-#include "Rig3D\MeshLibrary.h"
+#include "Rig3D\Graphics\MeshLibrary.h"
 #include <d3d11.h>
 #include <d3dcompiler.h>
 #include <Rig3D/Graphics/Camera.h>
@@ -27,7 +27,7 @@
 #define BALL_MASS						0.16f			// kg
 #define ELASTIC_CONSTANT				0.7f
 #define PLANE_SPHERE_ELASTIC_CONSTANT	0.5f
-#define KINETIC_FRICTION_CONSTANT		0.4f
+#define KINETIC_FRICTION_CONSTANT		0.9f
 #define STATIC_FRICTION_CONSTANT		0.015f
 #define CUE_SPEED						0.03f			// m/ms^2
 #define CUE_MASS						0.600f			// kg
@@ -45,7 +45,7 @@
 #define LINEAR_VELOCITY_THRESHOLD		0.000995f
 #define ANGULAR_VELOCITY_THRESHOLD		0.001f
 
-#define ROTATIONAL_DYNAMICS				1
+#define ROTATIONAL_DYNAMICS				0
 
 using namespace Rig3D;
 
@@ -63,7 +63,6 @@ char gMeshMemory[gMeshMemorySize];
 class BilliardsSample : public IScene, public virtual IRendererDelegate
 {
 public:
-	typedef cliqCity::memory::LinearAllocator LinearAllocator;
 	typedef Plane<vec3f>	Plane;
 	typedef Sphere<vec3f>	Sphere;
 
@@ -280,7 +279,7 @@ public:
 				i++;
 			}
 
-			xOffset = -(BALL_RADIUS * xCount * 0.5f);
+			xOffset = -(BALL_RADIUS * xCount);
 			zOffset += diameter + FLT_EPSILON;
 			xCount++;
 		}
@@ -492,7 +491,7 @@ public:
 		ballTransformBufferDesc.ByteWidth = sizeof(mat4f) * BALL_COUNT;
 		ballTransformBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
 		ballTransformBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-		ballTransformBufferDesc.CPUAccessFlags = D3D10_CPU_ACCESS_WRITE;
+		ballTransformBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 		ballTransformBufferDesc.MiscFlags = 0;
 		ballTransformBufferDesc.StructureByteStride = 0;
 
@@ -562,7 +561,7 @@ public:
 
 	void UpdateCamera()
 	{
-		mViewProjection.view = mat4f::lookAtLH(mCamera.mTransform.GetPosition() + mCamera.mTransform.GetForward(), mCamera.mTransform.GetPosition(), vec3f(0.0f, 1.0f, 0.0f)).transpose();
+		mViewProjection.view = mat4f::lookAtLH(mCamera.mTransform.GetPosition() + mCamera.mTransform.GetForward(), mCamera.mTransform.GetPosition(), mCamera.mTransform.GetUp()).transpose();
 		//mViewProjection.view = mat4f::lookAtLH(gTablePosition, mCamera.mTransform.GetPosition(), vec3f(0.0f, 1.0f, 0.0f)).transpose();
 
 	}
@@ -979,8 +978,8 @@ public:
 			float k = CalculateSphereSphereImpulse(spheres[i0], spheres[i1], J0, J1, rigidBodies[i0], rigidBodies[i1], contactNormal, p0, p1);
 			rigidBodies[i0].velocity -= k * contactNormal * rigidBodies[i0].inverseMass;
 			rigidBodies[i1].velocity += k * contactNormal * rigidBodies[i1].inverseMass;
-			//rigidBodies[i0].angularVelocity -= cliqCity::graphicsMath::cross(p0, k * contactNormal) * gSphereInverseTensor;
-			//rigidBodies[i1].angularVelocity += cliqCity::graphicsMath::cross(p1, k * contactNormal) * gSphereInverseTensor;
+			rigidBodies[i0].angularVelocity -= cliqCity::graphicsMath::cross(p0, k * contactNormal) * gSphereInverseTensor;
+			rigidBodies[i1].angularVelocity += cliqCity::graphicsMath::cross(p1, k * contactNormal) * gSphereInverseTensor;
 #else
 			float k = CalculateSphereSphereImpulse(spheres[i0], spheres[i1], rigidBodies[i0], rigidBodies[i1], contactNormal);
 			rigidBodies[i0].velocity -= k * contactNormal * rigidBodies[i0].inverseMass;

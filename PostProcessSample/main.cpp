@@ -4,9 +4,9 @@
 #include "Rig3D\Graphics\DirectX11\DX3D11Renderer.h"
 #include "Rig3D\Graphics\Interface\IMesh.h"
 #include "Rig3D\Common\Transform.h"
-#include "Memory\Memory\LinearAllocator.h"
+#include "Memory\Memory\Memory.h"
 #include "Rig3D\Graphics\DirectX11\DirectXTK\Inc\WICTextureLoader.h"
-#include "Rig3D\MeshLibrary.h"
+#include "Rig3D\Graphics\MeshLibrary.h"
 #include <d3d11.h>
 #include <d3dcompiler.h>
 #include <random>
@@ -29,9 +29,6 @@ static const float ANIMATION_DURATION	= 20000.0f; // 20 Seconds
 class Rig3DSampleScene : public IScene, public virtual IRendererDelegate
 {
 public:
-
-	typedef cliqCity::memory::LinearAllocator LinearAllocator;
-
 	enum BlurType
 	{
 		BLUR_TYPE_NONE,
@@ -236,8 +233,8 @@ public:
 		qIndices[5] = 0;
 
 		mMeshLibrary.NewMesh(&mQuadMesh, mRenderer);
-		mRenderer->VSetMeshVertexBufferData(mQuadMesh, qVertices, sizeof(SampleVertex) * 4, sizeof(SampleVertex), GPU_MEMORY_USAGE_STATIC);
-		mRenderer->VSetMeshIndexBufferData(mQuadMesh, qIndices, 6, GPU_MEMORY_USAGE_STATIC);
+		mRenderer->VSetStaticMeshVertexBuffer(mQuadMesh, qVertices, sizeof(SampleVertex) * 4, sizeof(SampleVertex));
+		mRenderer->VSetStaticMeshIndexBuffer(mQuadMesh, qIndices, 6);
 
 		for (int i = 0; i < NODE_COUNT; i++) {
 			mSceneNodes[i].mMesh = mCubeMesh;

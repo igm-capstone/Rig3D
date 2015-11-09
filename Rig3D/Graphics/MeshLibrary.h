@@ -401,8 +401,8 @@ namespace Rig3D
 		resource.Load();
 
 		(renderer->GetGraphicsAPI() == GRAPHICS_API_DIRECTX11) ? RIG_NEW(DX11Mesh, mAllocator, *mesh)() : RIG_NEW(DX11Mesh, mAllocator, *mesh)();
-		renderer->VSetMeshVertexBufferData(*mesh, &resource.mVertices[0], sizeof(Vertex) * resource.mVertices.size(), sizeof(Vertex), GPU_MEMORY_USAGE_STATIC);
-		renderer->VSetMeshIndexBufferData(*mesh, &resource.mIndices[0], resource.mIndices.size(), GPU_MEMORY_USAGE_STATIC);
+		renderer->VSetStaticMeshVertexBuffer(*mesh, &resource.mVertices[0], sizeof(Vertex) * resource.mVertices.size(), sizeof(Vertex));
+		renderer->VSetStaticMeshIndexBuffer(*mesh, &resource.mIndices[0], resource.mIndices.size());
 	}
 }
 

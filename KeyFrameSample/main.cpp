@@ -4,11 +4,11 @@
 #include "Rig3D\Graphics\DirectX11\DX3D11Renderer.h"
 #include "Rig3D\Graphics\Interface\IMesh.h"
 #include "Rig3D\Common\Transform.h"
-#include "Memory\Memory\LinearAllocator.h"
-#include "Rig3D\MeshLibrary.h"
+#include "Memory\Memory\Memory.h"
+#include "Rig3D\Graphics\MeshLibrary.h"
 #include <d3d11.h>
-#include <d3dcompiler.h>
 #include <fstream>
+#include "Rig3D\Graphics\Interface\IShader.h"
 
 #define PI 3.1415926535f
 
@@ -24,7 +24,6 @@ class Rig3DSampleScene : public IScene, public virtual IRendererDelegate
 public:
 
 	typedef cliqCity::graphicsMath::Vector2 vec2f;
-	typedef cliqCity::memory::LinearAllocator LinearAllocator;
 
 	enum InterpolationMode
 	{
@@ -63,14 +62,13 @@ public:
 	LinearAllocator			mAllocator;
 	KeyFrame				mKeyFrames[KEY_FRAME_COUNT];
 
+	IShader*				mVertexShader;
+	IShader*				mPixelShader;
+
 	DX3D11Renderer*			mRenderer;
 	ID3D11Device*			mDevice;
 	ID3D11DeviceContext*	mDeviceContext;
-	ID3D11Buffer*			mConstantBuffer;
-	ID3D11InputLayout*		mInputLayout;
-	ID3D11VertexShader*		mVertexShader;
-	ID3D11PixelShader*		mPixelShader;
-
+	
 	InterpolationMode		mInterpolationMode;
 	TCBProperties			mTCBProperties;
 	float					mAnimationTime;
@@ -93,10 +91,7 @@ public:
 
 	~Rig3DSampleScene()
 	{
-		ReleaseMacro(mVertexShader);
-		ReleaseMacro(mPixelShader);
-		ReleaseMacro(mConstantBuffer);
-		ReleaseMacro(mInputLayout);
+
 	}
 
 	void VInitialize() override
@@ -233,67 +228,32 @@ public:
 		indices[35] = 3;
 
 		mMeshLibrary.NewMesh(&mCubeMesh, mRenderer);
-		mRenderer->VSetMeshVertexBufferData(mCubeMesh, vertices, sizeof(SampleVertex) * VERTEX_COUNT, sizeof(SampleVertex), GPU_MEMORY_USAGE_STATIC);
-		mRenderer->VSetMeshIndexBufferData(mCubeMesh, indices, INDEX_COUNT, GPU_MEMORY_USAGE_STATIC);
+		mRenderer->VSetMeshVertexBuffer(mCubeMesh, vertices, sizeof(SampleVertex) * VERTEX_COUNT, sizeof(SampleVertex));
+		mRenderer->VSetMeshIndexBuffer(mCubeMesh, indices, INDEX_COUNT);
 	}
 
 	void InitializeShaders()
 	{
-		D3D11_INPUT_ELEMENT_DESC inputDescription[] =
+		InputElement inputElements[] = 
 		{
-			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-			{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+			{ "POSITION", 0, 0, 0, 0, FLOAT3, INPUT_CLASS_PER_VERTEX },
+			{ "COLOR", 0, 0, 12, 0, FLOAT3, INPUT_CLASS_PER_VERTEX }
 		};
 
 		// Load Vertex Shader --------------------------------------
-		ID3DBlob* vsBlob;
-		D3DReadFileToBlob(L"SampleVertexShader.cso", &vsBlob);
-
-		// Create the shader on the device
-		mDevice->CreateVertexShader(
-			vsBlob->GetBufferPointer(),
-			vsBlob->GetBufferSize(),
-			NULL,
-			&mVertexShader);
-
-		// Before cleaning up the data, create the input layout
-		if (inputDescription) {
-			if (mInputLayout != NULL) ReleaseMacro(mInputLayout);
-			mDevice->CreateInputLayout(
-				inputDescription,					// Reference to Description
-				2,									// Number of elments inside of Description
-				vsBlob->GetBufferPointer(),
-				vsBlob->GetBufferSize(),
-				&mInputLayout);
-		}
-
-		// Clean up
-		vsBlob->Release();
+		mRenderer->VCreateShader(&mVertexShader, &mAllocator);
+		mRenderer->VLoadVertexShader(mVertexShader, "SampleVertexShader.cso", inputElements, 2);
 
 		// Load Pixel Shader ---------------------------------------
-		ID3DBlob* psBlob;
-		D3DReadFileToBlob(L"SamplePixelShader.cso", &psBlob);
 
-		// Create the shader on the device
-		mDevice->CreatePixelShader(
-			psBlob->GetBufferPointer(),
-			psBlob->GetBufferSize(),
-			NULL,
-			&mPixelShader);
-
-		// Clean up
-		psBlob->Release();
+		mRenderer->VCreateShader(&mPixelShader, &mAllocator);
+		mRenderer->VLoadPixelShader(mPixelShader, "SamplePixelShader.cso");
 
 		// Constant buffers ----------------------------------------
-		D3D11_BUFFER_DESC cBufferTransformDesc;
-		cBufferTransformDesc.ByteWidth = sizeof(mMatrixBuffer);
-		cBufferTransformDesc.Usage = D3D11_USAGE_DEFAULT;
-		cBufferTransformDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		cBufferTransformDesc.CPUAccessFlags = 0;
-		cBufferTransformDesc.MiscFlags = 0;
-		cBufferTransformDesc.StructureByteStride = 0;
 
-		mDevice->CreateBuffer(&cBufferTransformDesc, NULL, &mConstantBuffer);
+		void* data[] = { &mMatrixBuffer };
+		size_t sizes[] = { sizeof(SampleMatrixBuffer) };
+		mRenderer->VCreateShaderConstantBuffers(mVertexShader, data, sizes, 1);
 	}
 
 	void InitializeCamera()
@@ -452,7 +412,7 @@ public:
 		float color[4] = { 0.5f, 1.0f, 1.0f, 1.0f };
 
 		// Set up the input assembler
-		mDeviceContext->IASetInputLayout(mInputLayout);
+		mRenderer->VSetInputLayout(mVertexShader);
 		mRenderer->VSetPrimitiveType(GPU_PRIMITIVE_TYPE_TRIANGLE);
 
 		mDeviceContext->RSSetViewports(1, &mRenderer->GetViewport());
@@ -464,21 +424,11 @@ public:
 			1.0f,
 			0);
 
-		mDeviceContext->VSSetShader(mVertexShader, NULL, 0);
-		mDeviceContext->PSSetShader(mPixelShader, NULL, 0);
+		mRenderer->VSetVertexShader(mVertexShader);
+		mRenderer->VSetPixelShader(mPixelShader);
 
-		mDeviceContext->UpdateSubresource(
-			mConstantBuffer,
-			0,
-			NULL,
-			&mMatrixBuffer,
-			0,
-			0);
-
-		mDeviceContext->VSSetConstantBuffers(
-			0,
-			1,
-			&mConstantBuffer);
+		mRenderer->VUpdateShaderConstantBuffer(mVertexShader, &mMatrixBuffer, 0);
+		mRenderer->VSetVertexShaderResources(mVertexShader);
 
 		mRenderer->VBindMesh(mCubeMesh);
 
@@ -493,6 +443,8 @@ public:
 
 	void VShutdown() override
 	{
+		mVertexShader->~IShader();
+		mPixelShader->~IShader();
 		mCubeMesh->~IMesh();
 		mAllocator.Free();
 	}

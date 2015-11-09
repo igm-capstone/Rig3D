@@ -4,8 +4,8 @@
 #include "Rig3D\Graphics\DirectX11\DX3D11Renderer.h"
 #include "Rig3D\Graphics\Interface\IMesh.h"
 #include "Rig3D\Common\Transform.h"
-#include "Memory\Memory\LinearAllocator.h"
-#include "Rig3D\MeshLibrary.h"
+#include "Memory\Memory\Memory.h"
+#include "Rig3D\Graphics\MeshLibrary.h"
 #include "Rig3D/TaskDispatch/TaskDispatcher.h"
 #include <d3d11.h>
 #include <d3dcompiler.h>
@@ -28,8 +28,6 @@
 #define POINT_LIGHT_VOLUME_SCALE	5.0f
 
 using namespace Rig3D;
-
-typedef cliqCity::memory::LinearAllocator LinearAllocator;
 
 uint8_t gMemory[10240];
 uint8_t gTaskMemory[1024];
@@ -737,8 +735,8 @@ public:
 		uint16_t planeIndices[24] = { 0, 1, 4, 4, 3, 0, 1, 2, 5, 5, 4, 1, 3, 4, 7, 7, 6, 3, 4, 5, 8, 8, 7, 4 };
 
 		mMeshLibrary.NewMesh(&mPlaneMesh, mRenderer);
-		mRenderer->VSetMeshVertexBufferData(mPlaneMesh, planeVertices, sizeof(Vertex3) * 9, sizeof(Vertex3), GPU_MEMORY_USAGE_STATIC);
-		mRenderer->VSetMeshIndexBufferData(mPlaneMesh, planeIndices, 24, GPU_MEMORY_USAGE_STATIC);
+		mRenderer->VSetMeshVertexBuffer(mPlaneMesh, planeVertices, sizeof(Vertex3) * 9, sizeof(Vertex3));
+		mRenderer->VSetMeshIndexBuffer(mPlaneMesh, planeIndices, 24);
 
 		Vertex2 quadVertices[4];
 		quadVertices[0].Position = { -1.0f, 1.0f, 0.0f };
@@ -753,8 +751,8 @@ public:
 		uint16_t quadIndices[6] = { 0, 1, 2, 2, 3, 0 };
 
 		mMeshLibrary.NewMesh(&mQuadMesh, mRenderer);
-		mRenderer->VSetMeshVertexBufferData(mQuadMesh, quadVertices, sizeof(Vertex2) * 4, sizeof(Vertex2), GPU_MEMORY_USAGE_STATIC);
-		mRenderer->VSetMeshIndexBufferData(mQuadMesh, quadIndices, 6, GPU_MEMORY_USAGE_STATIC);
+		mRenderer->VSetMeshVertexBuffer(mQuadMesh, quadVertices, sizeof(Vertex2) * 4, sizeof(Vertex2));
+		mRenderer->VSetMeshIndexBuffer(mQuadMesh, quadIndices, 6);
 	}
 
 	void InitializeLighting()

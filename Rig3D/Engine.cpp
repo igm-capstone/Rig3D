@@ -164,3 +164,8 @@ void Engine::RunScene(IScene* iScene)
 	iScene->VShutdown();
 	Shutdown();
 }
+
+IRenderer* Engine::GetRenderer() const
+{
+	return mRenderer;
+}

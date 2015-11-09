@@ -1,9 +1,10 @@
 #pragma once
 #include "Rig3D\Graphics\Interface\IRenderer.h"
 #include "Rig3D\Common\WMEventHandler.h"
-#include "Rig3D\rig_graphics_api_conversions.h"
+#include "Rig3D\Graphics\rig_graphics_api_conversions.h"
 #include "Rig3D\Graphics\DirectX11\dxerr.h"
 #include <assert.h>
+#include <d3dcompiler.h>
 
 #ifdef _WINDLL
 #define RIG3D __declspec(dllexport)
@@ -36,27 +37,70 @@
 
 namespace Rig3D
 {
+	class DX11Shader;
+
 	class RIG3D DX3D11Renderer : public IRenderer, public IObserver
 	{
 	public:
 		static DX3D11Renderer& SharedInstance();
 
 		int		VInitialize(HINSTANCE hInstance, HWND hwnd, Options options) override;
+		void	VOnResize() override;
 		void	VUpdateScene(const double& milliseconds) override;
 		void	VRenderScene() override;
-		void	VOnResize() override;
 		void	VShutdown() override;
-		void	HandleEvent(const IEvent& iEvent) override;
 
 		inline void	VSetPrimitiveType(GPUPrimitiveType type) override;
 		inline void	VDrawIndexed(GPUPrimitiveType type, uint32_t startIndex, uint32_t count) override;
 		inline void	VDrawIndexed(uint32_t startIndex, uint32_t count) override;
 
-		void	VSetMeshVertexBufferData(IMesh* mesh, void* vertices, const size_t& size, const size_t& stride, const GPUMemoryUsage& usage) override;
-		void	VSetMeshIndexBufferData(IMesh* mesh, uint16_t* indices, const uint32_t& count, const GPUMemoryUsage& usage) override;
+		void	VCreateVertexBuffer(void* buffer, void* vertices, const size_t& size) override;
+		void	VCreateStaticVertexBuffer(void* buffer, void* vertices, const size_t& size) override;
+		void	VCreateDynamicVertexBuffer(void* buffer, void* vertices, const size_t& size) override;
+
+		void	VCreateIndexBuffer(void* buffer, uint16_t* indices, const uint32_t& count) override;
+		void	VCreateStaticIndexBuffer(void* buffer, uint16_t* indices, const uint32_t& count) override;
+		void	VCreateDynamicIndexBuffer(void* buffer, uint16_t* indices, const uint32_t& count) override;
+
+		void	VCreateInstanceBuffer(void* buffer, void* data, const size_t& size) override;
+		void	VCreateStaticInstanceBuffer(void* buffer, void* data, const size_t& size) override;
+		void	VCreateDynamicInstanceBuffer(void* buffer, void* data, const size_t& size) override;
+
+		void	VCreateConstantBuffer(void* buffer, void* data, const size_t& size) override;
+		void	VCreateStaticConstantBuffer(void* buffer, void* data, const size_t& size) override;
+		void	VCreateDynamicConstantBuffer(void* buffer, void* data, const size_t& size) override;
+
+		void	VUpdateConstantBuffer(void* buffer, void* data) override;
+
+		void	VSetMeshVertexBuffer(IMesh* mesh, void* vertices, const size_t& size, const size_t& stride) override;
+		void	VSetStaticMeshVertexBuffer(IMesh* mesh, void* vertices, const size_t& size, const size_t& stride) override;
+		void	VSetDynamicMeshVertexBuffer(IMesh* mesh, void* vertices, const size_t& size, const size_t& stride) override;
+
+		void	VSetMeshIndexBuffer(IMesh* mesh, uint16_t* indices, const uint32_t& count) override;
+		void	VSetStaticMeshIndexBuffer(IMesh* mesh, uint16_t* indices, const uint32_t& count) override;
+		void	VSetDynamicMeshIndexBuffer(IMesh* mesh, uint16_t* indices, const uint32_t& count) override;
+
 		void    VBindMesh(IMesh* mesh) override;
 
+		void	VCreateShader(IShader** shader, LinearAllocator* allocator) override;
+		void	VLoadVertexShader(IShader* vertexShader, const char* filename, InputElement* inputElements, const uint32_t& count) override;
+		void	VLoadVertexShader(IShader* vertexShader, const char* filename, LinearAllocator* allocator) override;
+		void	VLoadVertexShader(IShader* vertexShader, const char* filename) override;
+		void	VLoadPixelShader(IShader* vertexShader, const char* filename, LinearAllocator* allocator) override;
+		void	VLoadPixelShader(IShader* pixelShader, const char* filename) override;
+
+		void	VSetInputLayout(IShader* vertexShader) override;
+		void	VSetVertexShaderInputLayout(IShader* vertexShader) override;
+		void	VSetVertexShaderResources(IShader* vertexShader) override;
+		void	VSetVertexShader(IShader* shader) override;
+
+		void	VSetPixelShader(IShader* shader) override;
+
+		void	VCreateShaderConstantBuffers(IShader* shader, void** data, size_t* sizes, const uint32_t& count) override;
+		void	VUpdateShaderConstantBuffer(IShader* shader, void* data, uint32_t index) override;
+
 		void	VSwapBuffers() override;
+
 
 		int						InitializeD3D11();
 		ID3D11Device*			GetDevice()				const;
@@ -66,6 +110,8 @@ namespace Rig3D
 		ID3D11RenderTargetView* const* GetRenderTargetView()	const;
 		ID3D11DepthStencilView* GetDepthStencilView()	const;
 		D3D11_VIEWPORT const&	GetViewport()			const;
+
+		void	HandleEvent(const IEvent& iEvent) override;
 
 	private:
 		UINT					mMSAA4xQuality;
@@ -90,6 +136,10 @@ namespace Rig3D
 
 		DX3D11Renderer(DX3D11Renderer const&) = delete;
 		void operator=(DX3D11Renderer const&) = delete;
+	
+		void SetVertexShaderInputLayout(ID3D11ShaderReflection* reflection, ID3DBlob* vsBlob, D3D11_SHADER_DESC* shaderDesc, DX11Shader* vertexShader);
+		void SetShaderConstantBuffers(ID3D11ShaderReflection* reflection, D3D11_SHADER_DESC* shaderDesc, DX11Shader* shader, LinearAllocator* allocator);
+		void SetShaderResources(ID3D11ShaderReflection* reflection, D3D11_SHADER_DESC* shaderDesc, DX11Shader* shader);
 	};
 }
 

@@ -31,6 +31,8 @@ namespace Rig3D
 
 		void	RunScene(IScene* iScene);
 
+		IRenderer* GetRenderer() const;
+
 	protected:
 		HDC mHDC;
 		HWND mHWND;
