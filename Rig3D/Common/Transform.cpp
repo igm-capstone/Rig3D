@@ -111,6 +111,12 @@ bool Transform::IsDirty()
 	return mIsDirty;
 }
 
+inline vec3f Rig3D::Transform::TransformPoint(Transform & transform, const vec3f & point)
+{
+	auto m = mat4f::translate(point) * transform.GetWorldMatrix();
+	return{ m.u.w, m.v.w, m.w.w };
+}
+
 quatf Transform::GetRotation() const
 {
 	return mRotation;

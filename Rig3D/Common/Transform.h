@@ -30,6 +30,7 @@ namespace Rig3D
 		vec3f GetRight();
 
 		inline bool IsDirty();
+		inline vec3f TransformPoint(Transform& transform, const vec3f& point);
 
 		inline quatf GetRotation() const;
 		inline vec3f GetRollPitchYaw() const;
