@@ -201,3 +201,24 @@ int IntersectDynamicSphereSphere(const Sphere<Vector>& s0, const Vector v0, cons
 	poi = s0.origin + t * v0; // Probably wrong
 	return 1;
 }
+
+template<class Vector>
+int IntersectAABBAABB(AABB<Vector> aabb0, AABB<Vector> aabb1)
+{
+	int numElements = sizeof(Vector) / sizeof(float);
+
+	Vector min0 = aabb0.origin - aabb0.halfSize;
+	Vector max0 = aabb0.origin + aabb0.halfSize;
+	Vector min1 = aabb1.origin - aabb1.halfSize;
+	Vector max1 = aabb1.origin + aabb1.halfSize;
+
+	for (int i = 0; i < numElements; i++)
+	{
+		if (max0[i] < min1[i] || min0[i] > max1[i])
+		{
+			return 0;
+		}
+	}
+
+	return 1;
+}
