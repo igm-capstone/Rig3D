@@ -484,18 +484,17 @@ public:
 			modelData[i].mStream.in[0] = &blockSize;
 			modelData[i].mStream.in[1] = &frameTime;
 			modelData[i].mStream.in[2] = &mParticleSize;
+			if (i!=0)
 			taskIDs[i] = dispatchQueue.AddTask(modelData[i], PerformModelLoadTask);
 		}
-
-		while (!done[0] || !done[1] || !done[2] || !done[3]) std::this_thread::yield();
+		PerformModelLoadTask(modelData[0]);
+		dispatchQueue.Synchronize();
 #else
 		// Now build the vertex array from the particle list array.  Each particle is a quad made out of two triangles.
 		for (int i = 0; i<mCurrentParticleCount; i++)
 		{
 			mParticleList[i].position.y = mParticleList[i].position.y - (mParticleList[i].velocity * frameTime * 0.01f);
-		}
-		for (int i = 0; i < mCurrentParticleCount; i++)
-		{
+
 			vec4f color = vec4f(mParticleList[i].color, 1.0f);
 			int index = i * 6;
 
