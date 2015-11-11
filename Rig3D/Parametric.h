@@ -19,14 +19,14 @@ template<class Vector>
 struct AABB
 {
 	Vector origin;
-	float radius;
+	Vector radius;
 };
 
 template<class Vector>
 struct Sphere
 {
-	Vector origin;
-	float radius;
+	Vector	origin;
+	float	radius;
 };
 
 template<class Vector>
