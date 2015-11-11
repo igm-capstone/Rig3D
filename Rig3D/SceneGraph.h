@@ -4,7 +4,7 @@
 #include <unordered_set>
 #include <map>
 #include "Common/Transform.h"
-#include "Memory/Memory/PoolAllocator.h"
+#include "Memory/Memory/Memory.h"
 
 #ifdef _WINDLL
 #define RIG3D __declspec(dllexport)
@@ -16,8 +16,6 @@ namespace Rig3D
 {
 	struct SceneGraphNode;
 	
-	typedef cliqCity::memory::PoolAllocator PoolAllocator;
-
 	class RIG3D SceneGraph
 	{
 	private:

@@ -6,10 +6,9 @@
 #include "Rig3D\Graphics\DirectX11\DX3D11Renderer.h"
 #include "Rig3D\Graphics\Interface\IMesh.h"
 #include "Rig3D\Common\Transform.h"
-#include "Memory\Memory\LinearAllocator.h"
-#include "Memory\Memory\PoolAllocator.h"
+#include "Memory\Memory\Memory.h"
 #include <Rig3D\SceneGraph.h>
-#include "Rig3D\MeshLibrary.h"
+#include "Rig3D\Graphics\MeshLibrary.h"
 #include "Rig3D\Graphics\Camera.h"
 #include <d3d11.h>
 #include <d3dcompiler.h>
@@ -23,7 +22,7 @@
 
 using namespace Rig3D;
 
-//#define MULTICORE
+#define MULTICORE
 
 #ifdef MULTICORE
 #include "Rig3D\TaskDispatch\TaskDispatcher.h"
@@ -41,7 +40,6 @@ class ParticlesScene : public IScene, public virtual IRendererDelegate
 public:
 
 	typedef cliqCity::graphicsMath::Vector2 vec2f;
-	typedef cliqCity::memory::LinearAllocator LinearAllocator;
 
 	struct Particle
 	{

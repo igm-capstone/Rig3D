@@ -4,7 +4,7 @@
 #include <Rig3D\Graphics\DirectX11\DX3D11Renderer.h>
 #include <Rig3D\Graphics\Interface\IMesh.h>
 #include <Rig3D\Common\Transform.h>
-#include <Memory\Memory\LinearAllocator.h>
+#include <Memory\Memory\Memory.h>
 #include <Rig3D\SceneGraph.h>
 #include "Rig3D\Graphics\MeshLibrary.h"
 #include <Rig3D/TaskDispatch/TaskDispatcher.h>
@@ -16,7 +16,6 @@
 
 using namespace Rig3D;
 using namespace cliqCity::multicore;
-using namespace cliqCity::memory;
 
 static const int VERTEX_COUNT = 8;
 static const int INDEX_COUNT = 36;
@@ -300,8 +299,8 @@ public:
 		indices[35] = 7;
 
 		mMeshLibrary.NewMesh(&mCubeMesh, mRenderer);
-		mRenderer->VSetMeshVertexBufferData(mCubeMesh, vertices, sizeof(SampleVertex) * VERTEX_COUNT, sizeof(SampleVertex), GPU_MEMORY_USAGE_STATIC);
-		mRenderer->VSetMeshIndexBufferData(mCubeMesh, indices, INDEX_COUNT, GPU_MEMORY_USAGE_STATIC);
+		mRenderer->VSetStaticMeshVertexBuffer(mCubeMesh, vertices, sizeof(SampleVertex) * VERTEX_COUNT, sizeof(SampleVertex));
+		mRenderer->VSetStaticMeshIndexBuffer(mCubeMesh, indices, INDEX_COUNT);
 	}
 
 	void InitializeShaders()
