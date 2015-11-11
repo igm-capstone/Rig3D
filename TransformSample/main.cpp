@@ -6,7 +6,7 @@
 #include <Rig3D\Common\Transform.h>
 #include <Memory\Memory\LinearAllocator.h>
 #include <Rig3D\SceneGraph.h>
-#include <Rig3D\MeshLibrary.h>
+#include "Rig3D\Graphics\MeshLibrary.h"
 #include <Rig3D/TaskDispatch/TaskDispatcher.h>
 #include <d3d11.h>
 #include <d3dcompiler.h>
