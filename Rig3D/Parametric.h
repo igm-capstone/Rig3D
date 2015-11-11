@@ -1,4 +1,5 @@
 #pragma once
+#include "GraphicsMath/cgm.h"
 
 template<class Vector>
 struct Ray
@@ -35,3 +36,8 @@ struct Plane
 	float  distance;
 	
 };
+
+typedef AABB<vec2f>		BoxCollider2D;
+typedef AABB<vec3f>		BoxCollider;
+typedef Sphere<vec2f>	CircleCollider;
+typedef Sphere<vec3f>	SphereCollider;
