@@ -36,7 +36,7 @@ int IntersectRaySphere(const Ray<Vector>& ray, const Sphere<Vector>& sphere, Vec
 	// Let m = Ray.origin - sphere.origin
 	Vector m = ray.origin - sphere.origin;
 
-	// Let b = projection of ray direction onto vector from rayOrigin to sphereOrigin
+	// Let b = projection of ray normal onto vector from rayOrigin to sphereOrigin
 	float b = cliqCity::graphicsMath::dot(m, ray.normal);
 
 	// Let c = difference between distance from rayOrigin to sphereOrigin and sphereRadius
@@ -75,7 +75,7 @@ int IntersectRayAABB(const Ray<Vector>& ray, const AABB<Vector>& aabb, Vector& p
 		float aabbMin = aabb.origin[i] - aabb.radius[i];
 		float aabbMax = aabb.origin[i] + aabb.radius[i];
 
-		if (abs(ray.direction[i]) < FLT_EPSILON)
+		if (abs(ray.normal[i]) < FLT_EPSILON)
 		{
 			// Ray is parallel to slab. Check if origin is contained by plane
 			if (ray.origin[i] < aabbMin || ray.origin[i] > aabbMax)
@@ -85,7 +85,7 @@ int IntersectRayAABB(const Ray<Vector>& ray, const AABB<Vector>& aabb, Vector& p
 		}
 		else
 		{
-			float ood = 1.0f / ray.direction[i];
+			float ood = 1.0f / ray.normal[i];
 			float t1 = (aabbMin - ray.origin[i]) * ood;
 			float t2 = (aabbMax - ray.origin[i]) * ood;
 
