@@ -19,7 +19,7 @@ template<class Vector>
 struct AABB
 {
 	Vector origin;
-	Vector radius;
+	Vector halfSize;
 };
 
 template<class Vector>

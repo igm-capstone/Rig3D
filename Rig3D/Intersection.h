@@ -72,8 +72,8 @@ int IntersectRayAABB(const Ray<Vector>& ray, const AABB<Vector>& aabb, Vector& p
 
 	for (int i = 0; i < numElements; i++)
 	{
-		float aabbMin = aabb.origin[i] - aabb.radius[i];
-		float aabbMax = aabb.origin[i] + aabb.radius[i];
+		float aabbMin = aabb.origin[i] - aabb.halfSize[i];
+		float aabbMax = aabb.origin[i] + aabb.halfSize[i];
 
 		if (abs(ray.normal[i]) < FLT_EPSILON)
 		{
