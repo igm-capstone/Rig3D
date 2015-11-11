@@ -1,6 +1,4 @@
 #pragma once
-
-#pragma once
 #include "Parametric.h"
 #include <cmath>
 #include <algorithm>
@@ -63,7 +61,7 @@ int IntersectRaySphere(const Ray<Vector>& ray, const Sphere<Vector>& sphere, Vec
 }
 
 template<class Vector>
-int IntersectRayAABB(const Ray<Vector>& ray, const AABB<Vector>& aabb, Vector& poi, float& t)
+int IntersectRayAABB(Ray<Vector>& ray, AABB<Vector>& aabb, Vector& poi, float& t)
 {
 	int numElements = sizeof(Vector) / sizeof(float);
 
