@@ -8,7 +8,26 @@
 #include "GraphicsMath\cgm.h"
 
 template<class Vector>
-int RaySphereIntersect(const Ray<Vector>& ray, const Sphere<Vector>& sphere, Vector& poi, float& t)
+int IntersectRayPlane(const Ray<Vector>& ray, const Plane<Vector>& plane, Vector& poi, float& t)
+{
+	float denominator = cliqCity::graphicsMath::dot(ray.normal, plane.normal);
+	
+	// Ray is parallel to plane and there is no intersection
+	if (denominator == 0.0f)
+	{
+		return 0;
+	}
+
+	float numerator = plane.distance - cliqCity::graphicsMath::dot(ray.origin, plane.normal);
+
+	t = numerator / denominator;
+	poi = ray.origin + ray.normal * t;
+
+	return 1;
+}
+
+template<class Vector>
+int IntersectRaySphere(const Ray<Vector>& ray, const Sphere<Vector>& sphere, Vector& poi, float& t)
 {
 	// R(t) = P + tD, where t >= 0
 	// S(t) = (X - C) * (X - C) = r^2, where X is a point on the surface of the sphere

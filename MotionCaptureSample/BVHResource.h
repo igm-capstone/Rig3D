@@ -32,6 +32,7 @@ struct BVHMotion
 {
 	uint32_t	FrameCount;
 	uint32_t	ChannelCount;
+	float		FrameTime;
 	float*		Data;
 };
 

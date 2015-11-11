@@ -84,6 +84,7 @@
     <ClInclude Include="Graphics\Interface\IMesh.h" />
     <ClInclude Include="Graphics\Interface\IRenderer.h" />
     <ClInclude Include="Graphics\Interface\IScene.h" />
+    <ClInclude Include="Graphics\Interface\IShader.h" />
     <ClInclude Include="Graphics\MeshLibrary.h" />
     <ClInclude Include="Graphics\rig_graphics_api_conversions.h" />
     <ClInclude Include="Intersection.h" />

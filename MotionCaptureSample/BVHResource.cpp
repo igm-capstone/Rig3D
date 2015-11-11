@@ -211,8 +211,7 @@ int	BVHResource::LoadMotion(std::fstream& file)
 		}
 		else if (line == BVHKeyFrame)
 		{
-			float frameTime;
-			file >> line >> frameTime;	// Frame Time: 
+			file >> line >> mMotion.FrameTime;	// Frame Time: 
 
 			int frameCount		= mMotion.FrameCount;
 			int channelCount	= mMotion.ChannelCount;

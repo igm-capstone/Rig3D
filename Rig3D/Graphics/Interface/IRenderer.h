@@ -84,7 +84,9 @@ namespace Rig3D
 		virtual void	VCreateStaticConstantBuffer(void* buffer, void* data, const size_t& size) = 0;
 		virtual void	VCreateDynamicConstantBuffer(void* buffer, void* data, const size_t& size) = 0;
 
-		virtual void	VUpdateConstantBuffer(void* buffer, void* data) = 0;
+		virtual void	VUpdateBuffer(void* buffer, void* data) = 0;						// Copies data of predetermined size
+		virtual void	VUpdateBuffer(void* buffer, void* data, const size_t& size) = 0;	// Map - Copy - Unmap
+
 #pragma endregion
 
 		virtual void	VSetMeshVertexBuffer(IMesh* mesh, void* vertices, const size_t& size, const size_t& stride) = 0;
@@ -103,20 +105,29 @@ namespace Rig3D
 		virtual void	VLoadVertexShader(IShader* vertexShader, const char* filename, InputElement* inputElements, const uint32_t& count) = 0;
 		virtual void	VLoadVertexShader(IShader* vertexShader, const char* filename, LinearAllocator* allocator) = 0;
 		virtual void	VLoadVertexShader(IShader* vertexShader, const char* filename) = 0;
+
 		virtual void	VLoadPixelShader(IShader* vertexShader, const char* filename, LinearAllocator* allocator) = 0;
 		virtual void	VLoadPixelShader(IShader* pixelShader, const char* filename) = 0;
 
 		virtual void	VSetInputLayout(IShader* vertexShader) = 0;
+		virtual void	VSetInstanceBuffers(IShader* vertexShader) = 0;
 		virtual void	VSetVertexShaderInputLayout(IShader* vertexShader) = 0;
 		virtual void	VSetVertexShaderResources(IShader* vertexShader) = 0;
 		virtual void	VSetVertexShader(IShader* shader) = 0;
+		
 		virtual void	VSetPixelShader(IShader* shader) = 0;
 
-		// Constant buffers will be bound to GPU registers in the order they are arranged
+		// Constant buffers will be bound to GPU registers in the order they are arranged starting at input slot 0.
 		virtual void	VCreateShaderConstantBuffers(IShader* shader, void** data, size_t* sizes, const uint32_t& count) = 0;
 
-		// Use the register number as an index
-		virtual void	VUpdateShaderConstantBuffer(IShader* shader, void* data, uint32_t index) = 0;
+		// Instance buffers will be bound to GPU registers in the order they are arranged starting at input slot 1.
+		virtual void	VCreateShaderInstanceBuffers(IShader* shader, void** data, size_t* sizes, size_t* strides, size_t* offsets, const uint32_t& count) = 0;
+		virtual void	VCreateStaticShaderInstanceBuffers(IShader* shader, void** data, size_t* sizes, size_t* strides, size_t* offsets, const uint32_t& count) = 0;
+		virtual void	VCreateDynamicShaderInstanceBuffers(IShader* shader, void** data, size_t* sizes, size_t* strides, size_t* offsets, const uint32_t& count) = 0;
+
+		// Index is result of the order the instance buffers were arranged when setting the shader.
+		virtual void	VUpdateShaderConstantBuffer(IShader* shader, void* data, const uint32_t& index) = 0;
+		virtual void	VUpdateShaderInstanceBuffer(IShader* shader, void* data, const size_t& size, const uint32_t& index) = 0;
 
 #pragma endregion
 
