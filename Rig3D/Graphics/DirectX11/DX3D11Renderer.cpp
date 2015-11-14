@@ -563,6 +563,18 @@ void DX3D11Renderer::VSetDynamicMeshIndexBuffer(IMesh* mesh, uint16_t* indices, 
 	VCreateDynamicIndexBuffer(&DXMesh->mIndexBuffer, indices, count);
 }
 
+void DX3D11Renderer::VUpdateMeshVertexBuffer(IMesh* mesh, void* data, const size_t& size)
+{
+	DX11Mesh* DXMesh = static_cast<DX11Mesh*>(mesh);
+	VUpdateBuffer(DXMesh->mVertexBuffer, data, size);
+}
+
+void DX3D11Renderer::VUpdateMeshIndexBuffer(IMesh* mesh, void* data, const uint32_t& count)
+{
+	DX11Mesh* DXMesh = static_cast<DX11Mesh*>(mesh);
+	VUpdateBuffer(DXMesh->mIndexBuffer, data, sizeof(uint16_t) * count);
+}
+
 void DX3D11Renderer::VBindMesh(IMesh* mesh)
 {
 	DX11Mesh* dxMesh = static_cast<DX11Mesh*>(mesh);

@@ -97,6 +97,9 @@ namespace Rig3D
 		virtual void	VSetStaticMeshIndexBuffer(IMesh* mesh, uint16_t* indices, const uint32_t& count) = 0;
 		virtual void	VSetDynamicMeshIndexBuffer(IMesh* mesh, uint16_t* indices, const uint32_t& count) = 0;
 
+		virtual void	VUpdateMeshVertexBuffer(IMesh* mesh, void* data, const size_t& size) = 0;
+		virtual void	VUpdateMeshIndexBuffer(IMesh* mesh, void* data, const uint32_t& count) = 0;
+
 		virtual void    VBindMesh(IMesh* mesh) = 0;
 
 #pragma region Shaders

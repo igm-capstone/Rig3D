@@ -109,6 +109,56 @@ int IntersectRayAABB(Ray<Vector>& ray, AABB<Vector>& aabb, Vector& poi, float& t
 	return 1;
 }
 
+template<class Vector>
+int IntersectLineAABB(Line<Vector>& line, AABB<Vector>& aabb, Vector& poi, float& t)
+{
+	int numElements = sizeof(Vector) / sizeof(float);
+
+	float tMin = 0.0f;
+	float tMax = 1.0f;
+
+	for (int i = 0; i < numElements; i++)
+	{
+		Vector normal = cliqCity::graphicsMath::normalize(line.end - line.origin);
+		float aabbMin = aabb.origin[i] - aabb.halfSize[i];
+		float aabbMax = aabb.origin[i] + aabb.halfSize[i];
+
+		if (abs(normal[i]) < FLT_EPSILON)
+		{
+			// Ray is parallel to slab. Check if origin is contained by plane
+			if (line.origin[i] < aabbMin || line.origin[i] > aabbMax)
+			{
+				return 0;
+			}
+		}
+		else
+		{
+			float ood = 1.0f / normal[i];
+			float t1 = (aabbMin - line.origin[i]) * ood;
+			float t2 = (aabbMax - line.origin[i]) * ood;
+
+			if (t1 > t2)
+			{
+				float temp = t2;
+				t2 = t1;
+				t1 = temp;
+			}
+
+			tMin = max(tMin, t1);
+			tMax = min(tMax, t2);
+
+			if (tMin > tMax)
+			{
+				return 0;
+			}
+		}
+	}
+
+	poi = (1 - tMin) * line.origin + tMin * line.end;
+	t = tMin;
+	return 1;
+}
+
 
 template<class Vector>
 int IntersectSpherePlane(const Sphere<Vector>& sphere, const Plane<Vector>& plane)

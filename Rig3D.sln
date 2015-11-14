@@ -33,6 +33,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ParticlesSample", "Particle
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MotionCaptureSample", "MotionCaptureSample\MotionCaptureSample.vcxproj", "{25B8E71C-0426-4FF5-A15A-071C6621146D}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PhysicallyBasedLightingSample", "PhysicallyBasedLightingSample\PhysicallyBasedLightingSample.vcxproj", "{9A6CEC6E-8E30-4A29-8140-1902A42E9A1C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -129,6 +131,14 @@ Global
 		{25B8E71C-0426-4FF5-A15A-071C6621146D}.Release|Win32.Build.0 = Release|Win32
 		{25B8E71C-0426-4FF5-A15A-071C6621146D}.Release|x64.ActiveCfg = Release|x64
 		{25B8E71C-0426-4FF5-A15A-071C6621146D}.Release|x64.Build.0 = Release|x64
+		{9A6CEC6E-8E30-4A29-8140-1902A42E9A1C}.Debug|Win32.ActiveCfg = Debug|Win32
+		{9A6CEC6E-8E30-4A29-8140-1902A42E9A1C}.Debug|Win32.Build.0 = Debug|Win32
+		{9A6CEC6E-8E30-4A29-8140-1902A42E9A1C}.Debug|x64.ActiveCfg = Debug|x64
+		{9A6CEC6E-8E30-4A29-8140-1902A42E9A1C}.Debug|x64.Build.0 = Debug|x64
+		{9A6CEC6E-8E30-4A29-8140-1902A42E9A1C}.Release|Win32.ActiveCfg = Release|Win32
+		{9A6CEC6E-8E30-4A29-8140-1902A42E9A1C}.Release|Win32.Build.0 = Release|Win32
+		{9A6CEC6E-8E30-4A29-8140-1902A42E9A1C}.Release|x64.ActiveCfg = Release|x64
+		{9A6CEC6E-8E30-4A29-8140-1902A42E9A1C}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -146,5 +156,6 @@ Global
 		{1FAC2674-8584-416F-8929-03C6F129F77E} = {60C00797-6723-4DEE-BF7D-718FAA7AD5E6}
 		{1FAC2674-8584-416F-8929-03C6F129F77F} = {60C00797-6723-4DEE-BF7D-718FAA7AD5E6}
 		{25B8E71C-0426-4FF5-A15A-071C6621146D} = {60C00797-6723-4DEE-BF7D-718FAA7AD5E6}
+		{9A6CEC6E-8E30-4A29-8140-1902A42E9A1C} = {60C00797-6723-4DEE-BF7D-718FAA7AD5E6}
 	EndGlobalSection
 EndGlobal

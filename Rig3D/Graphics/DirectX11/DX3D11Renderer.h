@@ -81,6 +81,9 @@ namespace Rig3D
 		void	VSetStaticMeshIndexBuffer(IMesh* mesh, uint16_t* indices, const uint32_t& count) override;
 		void	VSetDynamicMeshIndexBuffer(IMesh* mesh, uint16_t* indices, const uint32_t& count) override;
 
+		void	VUpdateMeshVertexBuffer(IMesh* mesh, void* data, const size_t& size) override;
+		void	VUpdateMeshIndexBuffer(IMesh* mesh, void* data, const uint32_t& count) override;
+
 		void    VBindMesh(IMesh* mesh) override;
 
 		void	VCreateShader(IShader** shader, LinearAllocator* allocator) override;

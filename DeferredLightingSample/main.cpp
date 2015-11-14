@@ -289,11 +289,15 @@ public:
 	{
 		if (Input::SharedInstance().GetKeyDown(KEYCODE_UP))
 		{
-			mPointLightCount = min(mPointLightCount + 1, MAX_LIGHTS);
+			mPointLightCount = min(mPointLightCount + (MAX_LIGHTS / 8), MAX_LIGHTS);
+		}
+		else if (Input::SharedInstance().GetKeyDown(KEYCODE_RIGHT))
+		{
+			mPointLightCount = min(mPointLightCount + (MAX_LIGHTS / 4), MAX_LIGHTS);
 		}
 		else if (Input::SharedInstance().GetKeyDown(KEYCODE_DOWN))
 		{
-			mPointLightCount = max(mPointLightCount - 1, MIN_LIGHTS);
+			mPointLightCount = min(mPointLightCount + (MAX_LIGHTS / 2), MAX_LIGHTS);
 		}
 	}
 
