@@ -119,7 +119,7 @@ int IntersectLineAABB(Line<Vector>& line, AABB<Vector>& aabb, Vector& poi, float
 
 	for (int i = 0; i < numElements; i++)
 	{
-		Vector normal = cliqCity::graphicsMath::normalize(line.end - line.origin);
+		Vector normal = line.end - line.origin;
 		float aabbMin = aabb.origin[i] - aabb.halfSize[i];
 		float aabbMax = aabb.origin[i] + aabb.halfSize[i];
 

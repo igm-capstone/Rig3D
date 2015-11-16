@@ -127,7 +127,7 @@ int Engine::Shutdown()
 
 void Engine::HandleEvent(const IEvent& iEvent)
 {
-	const WMEvent& wmEvent = (const WMEvent&)iEvent;
+	const WMEvent& wmEvent = static_cast<const WMEvent&>(iEvent);
 	switch (wmEvent.msg)
 	{
 	case WM_QUIT:

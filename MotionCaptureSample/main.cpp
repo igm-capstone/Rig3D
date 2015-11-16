@@ -11,17 +11,24 @@
 #include "BVHResource.h"
 #include <vector>
 #include <utility>
+#include <Rig3D\Graphics\DirectX11\DirectXTK\Inc\WICTextureLoader.h>
 
 #define PI						3.1415926535f
 #define CAMERA_SPEED			0.1f
 #define CAMERA_ROTATION_SPEED	0.1f
 #define RADIAN					3.1415926535f / 180.0f
 #define INTERPOLATION			0
+#define BVH_FILENAME			"BVH\\Tiptoe.bvh"
 
 using namespace Rig3D;
 
 typedef	std::vector<std::pair<uint32_t, uint32_t>> PairVector;
 
+struct Vertex2
+{
+	vec3f Position;
+	vec2f UV;
+};
 
 struct Vertex3
 {
@@ -39,34 +46,39 @@ struct ModelViewProjection
 class MotionCaptureSample : public IScene, public virtual IRendererDelegate
 {
 public:
-	ModelViewProjection	mViewProjection;
-	Transform			mCamera;
-	BVHResource			mBVHResource;
+	ModelViewProjection			mViewProjection;
+	mat4f						mPlaneWorldMatrix;
 
-	LinearAllocator		mAllocator;
+	Transform					mCamera;
+	BVHResource					mBVHResource;
 
-	mat4f*				mJointWorldMatrices;
-	vec3f*				mLineVertices;
-	Transform*			mTransforms;
-	IMesh*				mCubeMesh;
-	IMesh*				mPyramidMesh;
+	LinearAllocator				mAllocator;
 
-	IRenderer*			mRenderer;
-	IShader*			mVertexShader;
-	IShader*			mPixelShader;
-	IShader*			mLineVertexShader;
-	IShader*			mLinePixelShader;
+	PairVector					mPairVector;
+	mat4f*						mJointWorldMatrices;
+	vec3f*						mLineVertices;
+	Transform*					mTransforms;
+	IMesh*						mCubeMesh;
+	IMesh*						mPlaneMesh;
 
-	uint32_t			mTransformCount;
-	uint32_t			mLineCount;
+	IRenderer*					mRenderer;
+	IShader*					mVertexShader;
+	IShader*					mPixelShader;
+	IShader*					mLineVertexShader;
+	IShader*					mLinePixelShader;
+	IShader*					mPlaneVertexShader;
+	IShader*					mPlanePixelShader;
 
-	float				mMouseX;
-	float				mMouseY;
-	float				mAnimationDuration;
-	float				mAnimationScale;
+	ID3D11Buffer*				mLineVertexBuffer;
+	ID3D11ShaderResourceView*	mCheckerboardSRV;
+	ID3D11SamplerState*			mSamplerState;
 
-	PairVector			mPairVector;
-	ID3D11Buffer*		mLineVertexBuffer;
+	uint32_t					mTransformCount;
+
+	float						mMouseX;
+	float						mMouseY;
+	float						mAnimationDuration;
+	float						mAnimationScale;
 
 	MotionCaptureSample();
 	~MotionCaptureSample();
@@ -86,6 +98,7 @@ public:
 	void UpdateCamera();
 	void UpdateTransforms(Transform* transforms, const BVHJoint* joint, const BVHMotion* motion, const uint32_t& transformCount, const uint32_t& frameIndex, const float& u);
 	void UpdateJointWorldMatrices(mat4f* jointWorldMatrices, Transform* transforms, const uint32_t& count);
+	void UpdateLineVertices(vec3f* lineVertices, PairVector* pairVector, mat4f* jointWorldMatrices);
 	void HandleInput(Input& input);
 };
 
@@ -95,17 +108,22 @@ MotionCaptureSample::MotionCaptureSample() :
 	mLineVertices(nullptr),
 	mTransforms(nullptr), 
 	mCubeMesh(nullptr), 
-	mPyramidMesh(nullptr),
+	mPlaneMesh(nullptr),
 	mRenderer(nullptr),
 	mVertexShader(nullptr),
 	mPixelShader(nullptr),
 	mLineVertexShader(nullptr),
 	mLinePixelShader(nullptr),
+	mPlaneVertexShader(nullptr),
+	mPlanePixelShader(nullptr),
+	mLineVertexBuffer(nullptr),
+	mCheckerboardSRV(nullptr),
+	mSamplerState(nullptr),
 	mTransformCount(0),
 	mMouseX(0.0f),
 	mMouseY(0.0f),
 	mAnimationDuration(0.0f),
-	mAnimationScale(1.0f)
+	mAnimationScale(3.0f)
 {
 	mOptions.mWindowCaption = "Motion Capture Sample";
 	mOptions.mWindowWidth = 1200;
@@ -117,31 +135,35 @@ MotionCaptureSample::MotionCaptureSample() :
 MotionCaptureSample::~MotionCaptureSample()
 {
 	ReleaseMacro(mLineVertexBuffer);
+	ReleaseMacro(mCheckerboardSRV);
+	ReleaseMacro(mSamplerState);
 }
 
 void MotionCaptureSample::VInitialize()
 {
 	mRenderer = &DX3D11Renderer::SharedInstance();
+	mRenderer->SetDelegate(this);
 
-	mCamera.SetPosition(vec3f(0.0f, 0.0f, -250.0f));
+	mCamera.SetPosition(vec3f(0.0f, 100.0f, -400.0f));
 	
-	InitializeGeometry();
 	InitializeBVHResources();
+	InitializeGeometry();
 	InitializeShaders();
 }
 
 void MotionCaptureSample::VUpdate(double milliseconds)
 {
+	HandleInput(Input::SharedInstance());
+
+	UpdateCamera();
+
 	static uint32_t frame = 0;
 	static float animationTime = 0.0f;
 
-	HandleInput(Input::SharedInstance());
-	UpdateCamera();
-	
 	float t = (animationTime / 1000.0f);
 
-	if (t < mAnimationDuration) {
-
+	if (t < mAnimationDuration)
+	{
 		// Find key frame index
 		frame = static_cast<int>(floorf((t / mBVHResource.mMotion.FrameTime )* mAnimationScale));
 
@@ -155,19 +177,14 @@ void MotionCaptureSample::VUpdate(double milliseconds)
 	
 	UpdateJointWorldMatrices(mJointWorldMatrices, mTransforms, mTransformCount);
 
-	for (uint32_t i = 0, j = 0; i < mPairVector.size(); i++, j+=2)
-	{
-		mLineVertices[j] = mJointWorldMatrices[mPairVector[i].first].transpose().t;
-		mLineVertices[j + 1] = mJointWorldMatrices[mPairVector[i].second].transpose().t;
-	}
-
-	mRenderer->VUpdateBuffer(mLineVertexBuffer, mLineVertices, sizeof(vec3f) * mPairVector.size() * 2);
+	UpdateLineVertices(mLineVertices, &mPairVector, mJointWorldMatrices);
 
 	char str[256];
 	sprintf_s(str, "Frame: %u Animation: %f", frame, t);
 	mRenderer->SetWindowCaption(str);
 
 	frame++;
+
 	if (frame == mBVHResource.mMotion.FrameCount)
 	{
 		frame = 0;
@@ -197,58 +214,105 @@ void MotionCaptureSample::VRender()
 	mRenderer->VBindMesh(mCubeMesh);
 	deviceContext->DrawIndexedInstanced(mCubeMesh->GetIndexCount(), mTransformCount, 0, 0, 0);
 
+	mRenderer->VSetInputLayout(mPlaneVertexShader);
+	mRenderer->VSetVertexShader(mPlaneVertexShader);
+	mRenderer->VSetPixelShader(mPlanePixelShader);
+
+	mRenderer->VUpdateShaderConstantBuffer(mPlaneVertexShader, &mViewProjection, 0);
+	mRenderer->VUpdateShaderConstantBuffer(mPlaneVertexShader, &mPlaneWorldMatrix, 1);
+	mRenderer->VSetVertexShaderResources(mPlaneVertexShader);
+
+	deviceContext->PSSetShaderResources(0, 1, &mCheckerboardSRV);
+	deviceContext->PSSetSamplers(0, 1, &mSamplerState);
+
+	mRenderer->VBindMesh(mPlaneMesh);
+	mRenderer->VDrawIndexed(0, mPlaneMesh->GetIndexCount());
+
 	deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
 	mRenderer->VSetInputLayout(mLineVertexShader);
 	mRenderer->VSetVertexShader(mLineVertexShader);
 	mRenderer->VSetPixelShader(mLinePixelShader);
+	mRenderer->VUpdateBuffer(mLineVertexBuffer, mLineVertices, sizeof(vec3f) * mPairVector.size() * 2);
 
 	UINT stride = sizeof(vec3f);
 	UINT offset = 0;
 
 	deviceContext->IASetVertexBuffers(0, 1, &mLineVertexBuffer, &stride, &offset);
 	deviceContext->Draw(mPairVector.size() * 2, 0);
+
 	mRenderer->VSwapBuffers();
 }
 
 void MotionCaptureSample::VShutdown()
 {
 	mCubeMesh->~IMesh();
-	mPyramidMesh->~IMesh();
+	mPlaneMesh->~IMesh();
 	mVertexShader->~IShader();
 	mPixelShader->~IShader();
 	mLineVertexShader->~IShader();
 	mLinePixelShader->~IShader();
+	mPlaneVertexShader->~IShader();
+	mPlanePixelShader->~IShader();
 	mAllocator.Free();
 }
 
 void MotionCaptureSample::VOnResize()
 {
-
+	mViewProjection.Projection = mat4f::normalizedPerspectiveLH(PI * 0.25f, mRenderer->GetAspectRatio(), 0.1f, 100.0f).transpose();
 }
 
 void MotionCaptureSample::InitializeGeometry()
 {
+	// Joint Model
+
 	MeshLibrary<LinearAllocator> meshLibrary;
 	meshLibrary.SetAllocator(&mAllocator);
 
 	OBJBasicResource<Vertex3> cubeResource("Models\\cube.obj");
-	OBJBasicResource<Vertex3> pyramidResource("Models\\pyramid.obj");
-
 	meshLibrary.LoadMesh(&mCubeMesh, mRenderer, cubeResource);
-	meshLibrary.LoadMesh(&mPyramidMesh, mRenderer, pyramidResource);
+	
+	// Plane
+
+	float planeHalfWidth = 400.0f;
+	float planeHalfDepth = 400.0f;
+	float planeYOffset = 10.0f;
+
+	Vertex2 vertices[4];
+	vertices[0].Position = { -planeHalfWidth, -planeYOffset, -planeHalfDepth };
+	vertices[1].Position = { -planeHalfWidth, -planeYOffset, +planeHalfDepth };
+	vertices[2].Position = { +planeHalfWidth, -planeYOffset, +planeHalfDepth };
+	vertices[3].Position = { +planeHalfWidth, -planeYOffset, -planeHalfDepth };
+
+	vertices[0].UV = { 0.0f, 1.0f };
+	vertices[1].UV = { 0.0f, 0.0f };
+	vertices[2].UV = { 1.0f, 0.0f };
+	vertices[3].UV = { 1.0f, 1.0f };
+
+	uint16_t indices[6] = 
+	{
+		0, 1, 2,
+		2, 3, 0
+	};
+
+	meshLibrary.NewMesh(&mPlaneMesh, mRenderer);
+	mRenderer->VSetMeshVertexBuffer(mPlaneMesh, vertices, sizeof(Vertex2) * 4, sizeof(Vertex2));
+	mRenderer->VSetMeshIndexBuffer(mPlaneMesh, indices, 6);
+
+	// Line buffer 
+
+	mRenderer->VCreateDynamicVertexBuffer(&mLineVertexBuffer, nullptr, sizeof(vec3f) * mPairVector.size() * 2);
 }
 
 void MotionCaptureSample::InitializeBVHResources()
 {
 	// Load BVH file
-	mBVHResource.SetFilename("BVH\\Sneak.bvh");
+	mBVHResource.SetFilename(BVH_FILENAME);
 	mBVHResource.Load();
 
 	// Set up animation traits
 	mAnimationDuration = mBVHResource.mMotion.FrameTime * mBVHResource.mMotion.FrameCount * mAnimationScale;
 
 	mTransformCount = mBVHResource.mHierarchy.JointCount;
-	mLineCount		= mBVHResource.mHierarchy.JointCount;
 	
 	// Allocate Transforms
 	size_t transformsByteSize = sizeof(Transform) * mTransformCount;
@@ -267,6 +331,8 @@ void MotionCaptureSample::InitializeBVHResources()
 	size_t lineVertexByteSize = sizeof(vec3f) * mPairVector.size() * 2;
 	mLineVertices = reinterpret_cast<vec3f*>(mAllocator.Allocate(lineVertexByteSize, alignof(vec3f), 0));
 	memset(mLineVertices, 0, lineVertexByteSize);
+
+	mPlaneWorldMatrix = mat4f::scale(1.0f);
 }
 
 void MotionCaptureSample::InitializeTransforms(Transform* transforms, PairVector* pairVector, const BVHJoint* joint)
@@ -292,6 +358,8 @@ void MotionCaptureSample::InitializeTransforms(Transform* transforms, PairVector
 
 void MotionCaptureSample::InitializeShaders()
 {
+	// ==== Joint Shaders ====
+
 	InputElement inputElements[] =
 	{
 		{ "POSITION",	0, 0, 0,  0, FLOAT3, INPUT_CLASS_PER_VERTEX },
@@ -303,23 +371,15 @@ void MotionCaptureSample::InitializeShaders()
 		{ "WORLD",		3, 1, 48, 1, FLOAT4, INPUT_CLASS_PER_INSTANCE }
 	};
 
-	// Load Vertex Shader --------------------------------------
-
 	mRenderer->VCreateShader(&mVertexShader, &mAllocator);
 	mRenderer->VLoadVertexShader(mVertexShader, "MCVertexShader.cso", inputElements, 7);
-
-	// Load Pixel Shader ---------------------------------------
 
 	mRenderer->VCreateShader(&mPixelShader, &mAllocator);
 	mRenderer->VLoadPixelShader(mPixelShader, "MCPixelShader.cso");
 
-	// Constant buffers ----------------------------------------
-
 	void*	constantBufferData[]	= { &mViewProjection };
 	size_t	constantBufferSizes[]	= { sizeof(ModelViewProjection) };
 	mRenderer->VCreateShaderConstantBuffers(mVertexShader, constantBufferData, constantBufferSizes, 1);
-
-	// Instance buffers -----------------------------------------
 
 	void*	instanceBufferData[]	= { mJointWorldMatrices };
 	size_t	instanceBufferSizes[]	= { sizeof(mat4f) * mTransformCount };
@@ -327,19 +387,46 @@ void MotionCaptureSample::InitializeShaders()
 	size_t	instanceBufferOffsets[] = { 0 };
 	mRenderer->VCreateDynamicShaderInstanceBuffers(mVertexShader, instanceBufferData, instanceBufferSizes, instanceBufferStrides, instanceBufferOffsets, 1);
 
+	// ==== Line Shaders ====
+
 	InputElement lineInputElement = { "POSITION",	0, 0, 0,  0, FLOAT3, INPUT_CLASS_PER_VERTEX };
-
-	// Load Vertex Shader --------------------------------------
-
 	mRenderer->VCreateShader(&mLineVertexShader, &mAllocator);
 	mRenderer->VLoadVertexShader(mLineVertexShader, "MCLineVertexShader.cso", &lineInputElement, 1);
-
-	// Load Pixel Shader ---------------------------------------
 
 	mRenderer->VCreateShader(&mLinePixelShader, &mAllocator);
 	mRenderer->VLoadPixelShader(mLinePixelShader, "MCLinePixelShader.cso");
 
-	mRenderer->VCreateDynamicVertexBuffer(&mLineVertexBuffer, nullptr, sizeof(vec3f) * mPairVector.size() * 2);
+
+	// ==== Plane Shaders ====
+
+	InputElement planeInputElements[] =
+	{
+		{ "POSITION",	0, 0, 0,  0, FLOAT3, INPUT_CLASS_PER_VERTEX },
+		{ "TEXCOORD",	0, 0, 12, 0, FLOAT2, INPUT_CLASS_PER_VERTEX }
+	};
+
+	mRenderer->VCreateShader(&mPlaneVertexShader, &mAllocator);
+	mRenderer->VLoadVertexShader(mPlaneVertexShader, "MCPlaneVertexShader.cso", planeInputElements, 2);
+
+	mRenderer->VCreateShader(&mPlanePixelShader, &mAllocator);
+	mRenderer->VLoadPixelShader(mPlanePixelShader, "MCPlanePixelShader.cso");
+
+	void*	planeConstantBufferData[] = { &mViewProjection, &mPlaneWorldMatrix };
+	size_t	planeConstantBufferSizes[] = { sizeof(ModelViewProjection), sizeof(mat4f) };
+	mRenderer->VCreateShaderConstantBuffers(mPlaneVertexShader, planeConstantBufferData, planeConstantBufferSizes, 2);
+
+	ID3D11Device* device = static_cast<DX3D11Renderer*>(mRenderer)->GetDevice();
+	DirectX::CreateWICTextureFromFile(device, L"Textures\\checkerboard.jpg", nullptr, &mCheckerboardSRV);
+
+	D3D11_SAMPLER_DESC samplerDesc;
+	ZeroMemory(&samplerDesc, sizeof(D3D11_SAMPLER_DESC));
+	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+	device->CreateSamplerState(&samplerDesc, &mSamplerState);
 }
 
 void MotionCaptureSample::UpdateCamera()
@@ -458,8 +545,8 @@ void MotionCaptureSample::UpdateTransforms(Transform* transforms, const BVHJoint
 #endif
 
 	Transform* transform = &transforms[index++];
-	transform->SetPosition(position);
-	transform->SetRotation(rotation);
+	transform->SetPosition(position.x, position.y, position.z);
+	transform->SetRotation(rotation.x, rotation.y, -rotation.z);
 	
 	for (uint32_t i = 0; i < joint->Children.size(); i++)
 	{
@@ -475,6 +562,15 @@ void MotionCaptureSample::UpdateJointWorldMatrices(mat4f* jointWorldMatrices, Tr
 	}
 
 	mRenderer->VUpdateShaderInstanceBuffer(mVertexShader, mJointWorldMatrices, sizeof(mat4f) * count, 0);
+}
+
+void MotionCaptureSample::UpdateLineVertices(vec3f* lineVertices, PairVector* pairVector, mat4f* jointWorldMatrices)
+{
+	for (uint32_t i = 0, j = 0; i < pairVector->size(); i++, j += 2)
+	{
+		lineVertices[j] = jointWorldMatrices[pairVector->at(i).first].transpose().t;
+		lineVertices[j + 1] = jointWorldMatrices[pairVector->at(i).second].transpose().t;
+	}
 }
 
 void MotionCaptureSample::HandleInput(Input& input)
