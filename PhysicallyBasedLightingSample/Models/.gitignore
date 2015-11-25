@@ -1,0 +1,3 @@
+# Dont ignore .obj for this folder
+
+!*.obj

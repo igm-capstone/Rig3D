@@ -9,6 +9,8 @@
 #include <d3d11.h>
 #include <fstream>
 #include "Rig3D\Graphics\Interface\IShader.h"
+#include "Rig3D\Graphics\Interface\IShaderResource.h"
+
 
 #define PI 3.1415926535f
 
@@ -58,12 +60,13 @@ public:
 	};
 
 	SampleMatrixBuffer		mMatrixBuffer;
-	IMesh*					mCubeMesh;
 	LinearAllocator			mAllocator;
+	IMesh*					mCubeMesh;
 	KeyFrame				mKeyFrames[KEY_FRAME_COUNT];
 
 	IShader*				mVertexShader;
 	IShader*				mPixelShader;
+	IShaderResource*		mShaderResource;
 
 	DX3D11Renderer*			mRenderer;
 	ID3D11Device*			mDevice;
@@ -76,7 +79,12 @@ public:
 
 	MeshLibrary<LinearAllocator> mMeshLibrary;
 
-	Rig3DSampleScene() : mAllocator(1024)
+	Rig3DSampleScene() : 
+		mAllocator(1024), 
+		mCubeMesh(nullptr), 
+		mVertexShader(nullptr), 
+		mPixelShader(nullptr),
+		mRenderer(nullptr)
 	{
 		mOptions.mWindowCaption = "Key Frame Sample";
 		mOptions.mWindowWidth = 800;
@@ -236,8 +244,8 @@ public:
 	{
 		InputElement inputElements[] = 
 		{
-			{ "POSITION", 0, 0, 0, 0, FLOAT3, INPUT_CLASS_PER_VERTEX },
-			{ "COLOR", 0, 0, 12, 0, FLOAT3, INPUT_CLASS_PER_VERTEX }
+			{ "POSITION", 0, 0, 0, 0, RGB_FLOAT32, INPUT_CLASS_PER_VERTEX },
+			{ "COLOR", 0, 0, 12, 0, RGB_FLOAT32, INPUT_CLASS_PER_VERTEX }
 		};
 
 		// Load Vertex Shader --------------------------------------
@@ -251,9 +259,11 @@ public:
 
 		// Constant buffers ----------------------------------------
 
+		mRenderer->VCreateShaderResource(&mShaderResource, &mAllocator);
+
 		void* data[] = { &mMatrixBuffer };
 		size_t sizes[] = { sizeof(SampleMatrixBuffer) };
-		mRenderer->VCreateShaderConstantBuffers(mVertexShader, data, sizes, 1);
+		mRenderer->VCreateShaderConstantBuffers(mShaderResource, data, sizes, 1);
 	}
 
 	void InitializeCamera()
@@ -427,8 +437,8 @@ public:
 		mRenderer->VSetVertexShader(mVertexShader);
 		mRenderer->VSetPixelShader(mPixelShader);
 
-		mRenderer->VUpdateShaderConstantBuffer(mVertexShader, &mMatrixBuffer, 0);
-		mRenderer->VSetVertexShaderResources(mVertexShader);
+		mRenderer->VUpdateShaderConstantBuffer(mShaderResource, &mMatrixBuffer, 0);
+		mRenderer->VSetVertexShaderConstantBuffers(mShaderResource);
 
 		mRenderer->VBindMesh(mCubeMesh);
 
@@ -445,6 +455,7 @@ public:
 	{
 		mVertexShader->~IShader();
 		mPixelShader->~IShader();
+		mShaderResource->~IShaderResource();
 		mCubeMesh->~IMesh();
 		mAllocator.Free();
 	}

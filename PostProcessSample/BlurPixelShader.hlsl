@@ -6,7 +6,7 @@ struct Pixel
 
 cbuffer blurParameters : register(b0)
 {
-	float2 uvOffsets[12];	// 4 * 2 * 12 = 96
+	float4 uvOffsets[12];	// 4 * 2 * 12 = 96
 }
 
 Texture2D sceneTexture		: register(t0);
@@ -22,7 +22,7 @@ float4 main(Pixel pixel) : SV_TARGET
 		float4 pixelColor = float4(0, 0, 0, 0);
 
 		for (int i = 0; i < 12; i++) {
-			pixelColor += sceneTexture.Sample(sceneSampler, pixel.mUV.xy + uvOffsets[i]) * weights[i];
+			pixelColor += sceneTexture.Sample(sceneSampler, pixel.mUV.xy + uvOffsets[i].xy) * weights[i];
 		}
 
 		return pixelColor;

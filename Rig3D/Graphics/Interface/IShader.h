@@ -5,7 +5,14 @@ namespace Rig3D
 	class IShader
 	{
 	public:
-		IShader();
-		virtual ~IShader();
+		IShader()
+		{
+			
+		};
+
+		virtual ~IShader()
+		{
+			
+		};
 	};
 }
