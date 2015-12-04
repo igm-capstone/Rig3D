@@ -10,10 +10,12 @@
 #include <Rig3D\SceneGraph.h>
 #include "Rig3D\Graphics\MeshLibrary.h"
 #include "Rig3D\Graphics\Camera.h"
+#include "Rig3D\Graphics\DirectX11\DX11IMGUI.h"
 #include <d3d11.h>
 #include <d3dcompiler.h>
 #include "Rig3D\Graphics\DirectX11\DirectXTK\Inc\DDSTextureLoader.h"
 #include <fstream>
+#include <Rig3D\Graphics\DirectX11\imgui\imgui.h>
 
 #define PI								3.1415926535f
 #define RADIAN							3.1415926535f / 180.0f
@@ -22,7 +24,7 @@
 
 using namespace Rig3D;
 
-#define MULTICORE
+//#define MULTICORE
 
 #ifdef MULTICORE
 #include "Rig3D\TaskDispatch\TaskDispatcher.h"
@@ -99,6 +101,10 @@ public:
 	ID3D11Buffer*				mIndexBuffer;
 	int							mVertexCount;
 
+	bool show_test_window = false;
+	bool show_another_window = false;
+	ImVec4 clear_col = ImColor(114, 144, 154);
+
 	ParticlesScene() : 
 		mRenderer(nullptr), 
 		mDevice(nullptr), 
@@ -119,6 +125,7 @@ public:
 
 	~ParticlesScene()
 	{
+		DX11IMGUI::Shutdown();
 		ReleaseMacro(mVertexShader);
 		ReleaseMacro(mPixelShader);
 		ReleaseMacro(mConstantBuffer);
@@ -148,6 +155,8 @@ public:
 		InitializeGeometry();
 		InitializeShaders();
 		InitializeCamera();
+
+		DX11IMGUI::Init(mRenderer->GetHWnd(), mRenderer->GetDevice(), mRenderer->GetDeviceContext());
 	}
 
 	void InitializeParticleSystem()
@@ -548,14 +557,14 @@ public:
 
 	void UpdateCamera()
 	{
-		ScreenPoint mousePosition = Input::SharedInstance().mousePosition;
+		/*ScreenPoint mousePosition = Input::SharedInstance().mousePosition;
 		if (Input::SharedInstance().GetMouseButton(MOUSEBUTTON_LEFT)) {
 			mCamera.mTransform.RotatePitch(-(mousePosition.y - mMouseY) * RADIAN * CAMERA_ROTATION_SPEED);
 			mCamera.mTransform.RotateYaw(-(mousePosition.x - mMouseX) * RADIAN * CAMERA_ROTATION_SPEED);
 		}
 
 		mMouseX = mousePosition.x;
-		mMouseY = mousePosition.y;
+		mMouseY = mousePosition.y;*/
 
 		vec3f position = mCamera.mTransform.GetPosition();
 		if (Input::SharedInstance().GetKey(KEYCODE_W)) {
@@ -629,6 +638,38 @@ public:
 		ID3D11ShaderResourceView* nunll[1] = { nullptr };
 		mDeviceContext->PSSetShaderResources(0, 1, nunll);
 
+		mDeviceContext->OMSetRenderTargets(1, mRenderer->GetRenderTargetView(), nullptr);
+
+		DX11IMGUI::NewFrame();
+		// 1. Show a simple window
+		// Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets appears in a window automatically called "Debug"
+		{
+			static float f = 0.0f;
+			ImGui::Text("Hello, world!");
+			ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
+			ImGui::ColorEdit3("clear color", (float*)&clear_col);
+			if (ImGui::Button("Test Window")) show_test_window ^= 1;
+			if (ImGui::Button("Another Window")) show_another_window ^= 1;
+			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+		}
+
+		// 2. Show another simple window, this time using an explicit Begin/End pair
+		if (show_another_window)
+		{
+			ImGui::SetNextWindowSize(ImVec2(200, 100), ImGuiSetCond_FirstUseEver);
+			ImGui::Begin("Another Window", &show_another_window);
+			ImGui::Text("Hello");
+			ImGui::End();
+		}
+
+		// 3. Show the ImGui test window. Most of the sample code is in ImGui::ShowTestWindow()
+		if (show_test_window)
+		{
+			ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiSetCond_FirstUseEver);     // Normally user code doesn't need/want to call it because positions are saved in .ini file anyway. Here we just want to make the demo initial state a bit more friendly!
+			ImGui::ShowTestWindow(&show_test_window);
+		}
+
+		ImGui::Render();
 
 		mRenderer->VSwapBuffers();
 	}
