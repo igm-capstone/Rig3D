@@ -4,7 +4,6 @@ struct Vertex
 	float3		normal			: NORMAL;
 	float2		uv				: TEXCOORD;
 	float4x4	world			: WORLD;
-	float2		material		: TEXCOORD1;
 	uint		instanceID		: SV_InstanceID;
 };
 
@@ -13,7 +12,6 @@ struct Pixel
 	float4 position		: SV_POSITION;
 	float3 positionT	: POSITIONT;
 	float3 normal		: NORMAL;
-	float2 material		: TEXCOORD;
 };
 
 cbuffer transform : register(b0)
@@ -31,7 +29,6 @@ Pixel main(Vertex vertex)
 	pixel.position = mul(vertexPosition, clip);
 	pixel.positionT = mul(vertexPosition, vertex.world).xyz;
 	pixel.normal = mul(float4(vertex.normal, 0.0f), vertex.world).xyz;
-	pixel.material = vertex.material;
 
 	return pixel;
 }

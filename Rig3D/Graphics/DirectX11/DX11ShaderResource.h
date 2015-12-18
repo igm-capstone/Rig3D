@@ -3,9 +3,15 @@
 #include <d3d11.h>
 #include <vector>
 
+#ifdef _WINDLL
+#define RIG3D __declspec(dllexport)
+#else
+#define RIG3D __declspec(dllimport)
+#endif
+
 namespace Rig3D
 {
-	class DX11ShaderResource : public IShaderResource
+	class RIG3D DX11ShaderResource : public IShaderResource
 	{
 	public:
 		DX11ShaderResource();

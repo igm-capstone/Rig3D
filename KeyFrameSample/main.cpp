@@ -6,7 +6,6 @@
 #include "Rig3D\Common\Transform.h"
 #include "Memory\Memory\Memory.h"
 #include "Rig3D\Graphics\MeshLibrary.h"
-#include <d3d11.h>
 #include <fstream>
 #include "Rig3D\Graphics\Interface\IShader.h"
 #include "Rig3D\Graphics\Interface\IShaderResource.h"
@@ -64,13 +63,11 @@ public:
 	IMesh*					mCubeMesh;
 	KeyFrame				mKeyFrames[KEY_FRAME_COUNT];
 
+	IRenderer*				mRenderer;
 	IShader*				mVertexShader;
 	IShader*				mPixelShader;
 	IShaderResource*		mShaderResource;
 
-	DX3D11Renderer*			mRenderer;
-	ID3D11Device*			mDevice;
-	ID3D11DeviceContext*	mDeviceContext;
 	
 	InterpolationMode		mInterpolationMode;
 	TCBProperties			mTCBProperties;
@@ -81,10 +78,11 @@ public:
 
 	Rig3DSampleScene() : 
 		mAllocator(1024), 
-		mCubeMesh(nullptr), 
+		mCubeMesh(nullptr),
+		mRenderer(nullptr),
 		mVertexShader(nullptr), 
 		mPixelShader(nullptr),
-		mRenderer(nullptr)
+		mShaderResource(nullptr)
 	{
 		mOptions.mWindowCaption = "Key Frame Sample";
 		mOptions.mWindowWidth = 800;
@@ -106,9 +104,6 @@ public:
 	{
 		mRenderer = &DX3D11Renderer::SharedInstance();
 		mRenderer->SetDelegate(this);
-
-		mDevice = mRenderer->GetDevice();
-		mDeviceContext = mRenderer->GetDeviceContext();
 
 		VOnResize();
 
@@ -282,7 +277,7 @@ public:
 			if (t < 9.0f) {
 
 				// Find key frame index
-				int i = (int)floorf(t);
+				int i = static_cast<int>(floorf(t));
 
 				// Find fractional portion
 				float u = (t - i);
@@ -425,14 +420,8 @@ public:
 		mRenderer->VSetInputLayout(mVertexShader);
 		mRenderer->VSetPrimitiveType(GPU_PRIMITIVE_TYPE_TRIANGLE);
 
-		mDeviceContext->RSSetViewports(1, &mRenderer->GetViewport());
-		mDeviceContext->OMSetRenderTargets(1, mRenderer->GetRenderTargetView(), mRenderer->GetDepthStencilView());
-		mDeviceContext->ClearRenderTargetView(*mRenderer->GetRenderTargetView(), color);
-		mDeviceContext->ClearDepthStencilView(
-			mRenderer->GetDepthStencilView(),
-			D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
-			1.0f,
-			0);
+		mRenderer->VSetContextTargetWithDepth();
+		mRenderer->VClearContext(color, 1.0f, 0);
 
 		mRenderer->VSetVertexShader(mVertexShader);
 		mRenderer->VSetPixelShader(mPixelShader);

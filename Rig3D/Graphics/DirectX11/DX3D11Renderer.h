@@ -163,13 +163,16 @@ namespace Rig3D
 		void	VSetPixelShaderConstantBuffer(IShaderResource* shaderResource, const uint32_t& atIndex, const uint32_t& toBindingIndex) override;
 
 		void	VSetVertexShaderInstanceBuffers(IShaderResource* shaderResource) override;
+		void	VSetVertexShaderInstanceBuffer(IShaderResource* shaderResource, const uint32_t& atIndex, const uint32_t& toBindingIndex) override;
 
 		void	VSetPixelShaderResourceViews(IShaderResource* shaderResource) override;
+		
+		void	VSetVertexShaderResourceView(IShaderResource* shaderResource, const uint32_t& atIndex, const uint32_t& toBindingIndex) override;
 		void	VSetPixelShaderResourceView(IShaderResource* shaderResource, const uint32_t& atIndex, const uint32_t& toBindingIndex) override;
-
 
 		void	VAddShaderLinearSamplerState(IShaderResource* shaderResource, SamplerStateAddressType addressType, float* color = nullptr) override;
 		
+		void	VSetVertexShaderSamplerStates(IShaderResource* shaderResource) override;
 		void	VSetPixelShaderSamplerStates(IShaderResource* shaderResource) override;
 
 #pragma endregion 

@@ -9,8 +9,8 @@
 #include "Rig3D\Common\Transform.h"
 #include "Memory\Memory\Memory.h"
 #include "Rig3D\Graphics\MeshLibrary.h"
+#include "Rig3D\Visibility.h"
 #include <d3d11.h>
-#include <d3dcompiler.h>
 #include <random>
 #include <ctime>
 
@@ -72,9 +72,10 @@ public:
 	
 	struct SceneNode
 	{
-		Transform mTransform;
-		vec4f	  mColor;
-		IMesh*	  mMesh;
+		Transform		mTransform;
+		vec4f			mColor;
+		IMesh*			mMesh;
+		SphereCollider* mCollider;
 	};
 
 	SampleMatrixBuffer		mMatrixBuffer;
@@ -83,6 +84,7 @@ public:
 	BlurBuffer				mBlurV;
 	SceneNode				mSceneNodes[NODE_COUNT];
 	Transform				mCamera;
+	Frustum					mFrustum;
 
 	vec2f					mPixelSize;
 	vec4f					mClearColor;
@@ -108,6 +110,8 @@ public:
 	IShader*				mQuadBlurPixelShader;
 	IShader*				mMotionBlurPixelShader;
 
+	SphereCollider*			mSphereColliders;
+
 	Rig3DSampleScene() : 
 		mMouseX(0.0f),
 		mMouseY(0.0f),
@@ -123,7 +127,8 @@ public:
 		mSCPixelShader(nullptr),
 		mQuadVertexShader(nullptr),
 		mQuadBlurPixelShader(nullptr),
-		mMotionBlurPixelShader(nullptr)
+		mMotionBlurPixelShader(nullptr),
+		mSphereColliders(nullptr)
 	{
 		mOptions.mWindowCaption	= "Rig3D Sample";
 		mOptions.mWindowWidth	= 800;
@@ -191,10 +196,15 @@ public:
 		mRenderer->VSetStaticMeshVertexBuffer(mQuadMesh, qVertices, sizeof(SampleVertex) * 4, sizeof(SampleVertex));
 		mRenderer->VSetStaticMeshIndexBuffer(mQuadMesh, qIndices, 6);
 
+		mSphereColliders = reinterpret_cast<SphereCollider*>(mAllocator.Allocate(sizeof(SphereCollider) * NODE_COUNT, alignof(SphereCollider), 0));
+
 		for (int i = 0; i < NODE_COUNT; i++) {
-			mSceneNodes[i].mMesh = mCubeMesh;
-			mSceneNodes[i].mColor = { SATURATE_RANDOM, SATURATE_RANDOM, SATURATE_RANDOM, 1.0f };
 			mSceneNodes[i].mTransform.SetPosition((float)(rand() % 10) - 5.0f, (float)(rand() % 10) - 5.0f, (float)(rand() % 5));
+			mSceneNodes[i].mColor = { SATURATE_RANDOM, SATURATE_RANDOM, SATURATE_RANDOM, 1.0f };
+			mSceneNodes[i].mMesh = mCubeMesh;
+			mSceneNodes[i].mCollider = &mSphereColliders[i];
+			mSceneNodes[i].mCollider->origin = mSceneNodes[i].mTransform.GetPosition();
+			mSceneNodes[i].mCollider->radius = 0.5f;
 		}
 
 		mCamera.SetPosition( 0.0f, 0.0, -10.0f );
@@ -270,7 +280,8 @@ public:
 		mMatrixBuffer.mView = mCamera.GetWorldMatrix().inverse().transpose();
 		mMBMatrixBuffer.mInverseClip = (mMatrixBuffer.mProjection * mMatrixBuffer.mView * mat4f(1.0f)).inverse();
 		mat4f i = mMBMatrixBuffer.mPreviousClip * mMBMatrixBuffer.mInverseClip;
-		//mMatrixBuffer.mView = mat4f::lookToLH(mCamera.GetForward(), mCamera.mPosition, vec3f(0.0f, 1.0f, 0.0f)).transpose();
+
+		ExtractNormalizedFrustumLH(&mFrustum, (mMatrixBuffer.mProjection * mMatrixBuffer.mView).transpose());
 	}
 
 	void VUpdate(double milliseconds) override
@@ -453,7 +464,16 @@ public:
 
 	void DrawScene()
 	{
-		for (int i = 0; i < NODE_COUNT; i++) {
+		std::vector<uint32_t> indices;
+		indices.reserve(NODE_COUNT);
+
+		Cull(mFrustum, mSphereColliders, indices, NODE_COUNT);
+
+		char str[256];
+		sprintf_s(str, "Draw Calls %u", indices.size());
+		mRenderer->SetWindowCaption(str);
+
+		for (uint32_t i : indices) {
 			mMatrixBuffer.mWorld = mSceneNodes[i].mTransform.GetWorldMatrix().transpose();
 
 			mRenderer->VUpdateShaderConstantBuffer(mSphereShaderResource, &mMatrixBuffer, 0);

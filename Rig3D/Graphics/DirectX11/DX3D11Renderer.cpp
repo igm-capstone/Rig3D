@@ -1264,6 +1264,16 @@ void DX3D11Renderer::VSetVertexShaderInstanceBuffers(IShaderResource* shaderReso
 	}
 }
 
+void DX3D11Renderer::VSetVertexShaderInstanceBuffer(IShaderResource* shaderResource, const uint32_t& atIndex, const uint32_t& toBindingIndex)
+{
+	ID3D11Buffer** instanceBuffers = static_cast<DX11ShaderResource*>(shaderResource)->GetInstanceBuffers();
+	UINT* instanceBufferStrides = static_cast<DX11ShaderResource*>(shaderResource)->GetInstanceBufferStrides();
+	UINT* instanceBufferOffsets = static_cast<DX11ShaderResource*>(shaderResource)->GetInstanceBufferOffsets();
+
+	mDeviceContext->IASetVertexBuffers(toBindingIndex, 1, &instanceBuffers[atIndex], &instanceBufferStrides[atIndex], &instanceBufferOffsets[atIndex]);
+}
+
+
 void DX3D11Renderer::VSetPixelShaderResourceViews(IShaderResource* shaderResource)
 {
 	DX11ShaderResource* resource = static_cast<DX11ShaderResource*>(shaderResource);
@@ -1273,6 +1283,12 @@ void DX3D11Renderer::VSetPixelShaderResourceViews(IShaderResource* shaderResourc
 	{
 		mDeviceContext->PSSetShaderResources(0, srvCount, resource->GetShaderResourceViews());
 	}
+}
+
+void DX3D11Renderer::VSetVertexShaderResourceView(IShaderResource* shaderResource, const uint32_t& atIndex, const uint32_t& toBindingIndex)
+{
+	ID3D11ShaderResourceView** SRVs = static_cast<DX11ShaderResource*>(shaderResource)->GetShaderResourceViews();
+	mDeviceContext->VSSetShaderResources(toBindingIndex, 1, &SRVs[atIndex]);
 }
 
 void DX3D11Renderer::VSetPixelShaderResourceView(IShaderResource* shaderResource, const uint32_t& atIndex, const uint32_t& toBindingIndex)
@@ -1307,6 +1323,17 @@ void DX3D11Renderer::VAddShaderLinearSamplerState(IShaderResource* shaderResourc
 	}
 
 	static_cast<DX11ShaderResource*>(shaderResource)->AddSamplerState(samplerState);
+}
+
+void DX3D11Renderer::VSetVertexShaderSamplerStates(IShaderResource* shaderResource)
+{
+	DX11ShaderResource* resource = static_cast<DX11ShaderResource*>(shaderResource);
+
+	uint8_t samplerStateCount = resource->GetSamplerStateCount();
+	if (samplerStateCount)
+	{
+		mDeviceContext->VSSetSamplers(0, samplerStateCount, resource->GetSamplerStates());
+	}
 }
 
 void DX3D11Renderer::VSetPixelShaderSamplerStates(IShaderResource* shaderResource)

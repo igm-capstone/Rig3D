@@ -195,15 +195,18 @@ namespace Rig3D
 
 		// Instance buffers will be bound to GPU registers in the order they are arranged starting at input slot 1.
 		virtual void	VSetVertexShaderInstanceBuffers(IShaderResource* shaderResource) = 0;
+		virtual void	VSetVertexShaderInstanceBuffer(IShaderResource* shaderResource, const uint32_t& atIndex, const uint32_t& toBindingIndex) = 0;
 
 		// Resource View will be bound to GPU registers in the order they are arranged starting at input slot 0
 		virtual void	VSetPixelShaderResourceViews(IShaderResource* shaderResource) = 0;
 
 		// Resource View wiil at index will be bound to binding index.
+		virtual void	VSetVertexShaderResourceView(IShaderResource* shaderResource, const uint32_t& atIndex, const uint32_t& toBindingIndex) = 0;
 		virtual void	VSetPixelShaderResourceView(IShaderResource* shaderResource, const uint32_t& atIndex, const uint32_t& toBindingIndex) = 0;
 
 		virtual void	VAddShaderLinearSamplerState(IShaderResource* shaderResource, SamplerStateAddressType addressType, float* color = nullptr) = 0;
 		
+		virtual void	VSetVertexShaderSamplerStates(IShaderResource* shaderResource) = 0;
 		virtual void	VSetPixelShaderSamplerStates(IShaderResource* shaderResource) = 0;
 
 #pragma endregion 
