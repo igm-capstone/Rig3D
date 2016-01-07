@@ -94,6 +94,7 @@
     <ClInclude Include="Intersection.h" />
     <ClInclude Include="Parametric.h" />
     <ClInclude Include="rig_defines.h" />
+    <ClInclude Include="SceneGraph.h" />
     <ClInclude Include="TaskDispatch\Task.h" />
     <ClInclude Include="TaskDispatch\TaskDispatcher.h" />
     <ClInclude Include="Singleton.h" />
@@ -116,6 +117,7 @@
     <ClCompile Include="Graphics\Interface\IMesh.cpp" />
     <ClCompile Include="Graphics\Interface\IScene.cpp" />
     <ClCompile Include="Options.h" />
+    <ClCompile Include="SceneGraph.cpp" />
     <ClCompile Include="TaskDispatch\TaskDispatcher.cpp" />
   </ItemGroup>
   <ItemGroup>

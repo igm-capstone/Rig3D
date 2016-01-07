@@ -105,9 +105,16 @@ vec3f Transform::GetRight()
 	return mRotation * vec3f(1.0, 0.0, 0.0);
 }
 
-bool Transform::IsDirty() const
+bool Transform::IsDirty()
 {
-	return mIsDirty || (mParent != nullptr && mParent->IsDirty());
+	mIsDirty |= (mParent != nullptr && mParent->IsDirty());
+	return mIsDirty;
+}
+
+inline vec3f Rig3D::Transform::TransformPoint(const vec3f & point)
+{
+	auto m = mat4f::translate(point) * GetWorldMatrix();
+	return{ m.u.w, m.v.w, m.w.w };
 }
 
 quatf Transform::GetRotation() const
