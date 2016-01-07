@@ -30,6 +30,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TransformSample", "TransformSample\TransformSample.vcxproj", "{1FAC2674-8584-416F-8929-03C6F129F77E}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ParticlesSample", "ParticlesSample\ParticlesSample.vcxproj", "{1FAC2674-8584-416F-8929-03C6F129F77F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{77B5F1D0-8A48-4F96-AFF6-366D6FBAF351} = {77B5F1D0-8A48-4F96-AFF6-366D6FBAF351}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MotionCaptureSample", "MotionCaptureSample\MotionCaptureSample.vcxproj", "{25B8E71C-0426-4FF5-A15A-071C6621146D}"
 EndProject

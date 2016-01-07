@@ -221,6 +221,7 @@ namespace Rig3D
 		int						InitializeD3D11(HWND hwnd, Options options);
 		ID3D11Device*			GetDevice()				const;
 		ID3D11DeviceContext*	GetDeviceContext()		const;
+		HWND					GetHWnd()				const;
 		IDXGISwapChain*			GetSwapChain()			const;
 		ID3D11Texture2D*		GetDepthStencilBuffer() const;
 		ID3D11RenderTargetView* const* GetRenderTargetView()	const;

@@ -452,6 +452,16 @@ public:
 		else if (Input::SharedInstance().GetKeyDown(KEYCODE_T)) {
 			mInterpolationMode = INTERPOLATION_MODE_TCB;
 		}
+
+		if (Input::SharedInstance().GetGamepadButtonDown(GAMEPADBUTTON_A)) {
+			mInterpolationMode = INTERPOLATION_MODE_LINEAR;
+		}
+		else if (Input::SharedInstance().GetGamepadButtonDown(GAMEPADBUTTON_B)) {
+			mInterpolationMode = INTERPOLATION_MODE_CATMULL_ROM;
+		}
+		else if (Input::SharedInstance().GetGamepadButtonDown(GAMEPADBUTTON_X)) {
+			mInterpolationMode = INTERPOLATION_MODE_TCB;
+		}
 	}
 
 	static void InterpolateTransform(const TaskData& data)
