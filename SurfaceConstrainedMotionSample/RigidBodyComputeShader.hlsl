@@ -41,13 +41,15 @@ void main( uint3 DTid : SV_DispatchThreadID )
 	float u = (rb.position.x + (width * 0.5f)) / width;
 	float v = (rb.position.z + (depth * 0.5f)) / depth;
 
+	float scale = 1.0f;
+	float radius = 0.5f;
+
 	float2 uv = float2(u, 1.0f - v);
 	float3 normal = normalTexture.SampleLevel(samplerState, uv, 0).xyz;
-	float height = heightTexture.SampleLevel(samplerState, uv, 0).r * 5.0f;
+	float height = heightTexture.SampleLevel(samplerState, uv, 0).r * scale;
 	float3 planePos = float3(rb.position.x, height, rb.position.z);
 
-	float scale = 10.0f;
-	float radius = 0.5f;
+
 
 	float3 p0 = rb.position + float3(radius, 0.0f, radius);			// +xz
 	float3 p1 = rb.position + float3(-radius, 0.0f, -radius);		// -xz

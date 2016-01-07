@@ -1,7 +1,6 @@
 #include <Windows.h>
 #include "Rig3D\Engine.h"
 #include "Rig3D\Graphics\Interface\IScene.h"
-#include "Rig3D\Graphics\DirectX11\DX3D11Renderer.h"
 #include "Rig3D\Graphics\Interface\IMesh.h"
 #include "Rig3D\Common\Transform.h"
 #include "Memory\Memory\Memory.h"
@@ -62,7 +61,7 @@ public:
 	IMesh*						mCubeMesh;
 	IMesh*						mPlaneMesh;
 
-	IRenderer*					mRenderer;
+	TSingleton<IRenderer, DX3D11Renderer>*	mRenderer;
 	IShader*					mVertexShader;
 	IShader*					mPixelShader;
 	IShader*					mLineVertexShader;
@@ -147,7 +146,7 @@ MotionCaptureSample::~MotionCaptureSample()
 
 void MotionCaptureSample::VInitialize()
 {
-	mRenderer = &DX3D11Renderer::SharedInstance();
+	mRenderer = mEngine->GetRenderer();
 	mRenderer->SetDelegate(this);
 
 	mCamera.SetPosition(vec3f(0.0f, 100.0f, -400.0f));
@@ -200,14 +199,13 @@ void MotionCaptureSample::VUpdate(double milliseconds)
 
 void MotionCaptureSample::VRender()
 {
-	DX3D11Renderer* renderer = reinterpret_cast<DX3D11Renderer*>(mRenderer);
-	ID3D11DeviceContext* deviceContext = renderer->GetDeviceContext();
+	ID3D11DeviceContext* deviceContext = mRenderer->GetDeviceContext();
 
 	float color[4] = { 0.0f, 0.7294117647f, 1.0f, 1.0f };
-	deviceContext->OMSetRenderTargets(1, renderer->GetRenderTargetView(), renderer->GetDepthStencilView());
-	deviceContext->ClearRenderTargetView(*renderer->GetRenderTargetView(), color);
-	deviceContext->ClearDepthStencilView(renderer->GetDepthStencilView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-	deviceContext->RSSetViewports(1, &renderer->GetViewport());
+	deviceContext->OMSetRenderTargets(1, mRenderer->GetRenderTargetView(), mRenderer->GetDepthStencilView());
+	deviceContext->ClearRenderTargetView(*mRenderer->GetRenderTargetView(), color);
+	deviceContext->ClearDepthStencilView(mRenderer->GetDepthStencilView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+	deviceContext->RSSetViewports(1, &mRenderer->GetViewport());
 
 	mRenderer->VSetPrimitiveType(GPU_PRIMITIVE_TYPE_TRIANGLE);
 	mRenderer->VSetInputLayout(mVertexShader);
@@ -427,7 +425,7 @@ void MotionCaptureSample::InitializeShaders()
 	size_t	planeConstantBufferSizes[] = { sizeof(ModelViewProjection), sizeof(mat4f) };
 	mRenderer->VCreateShaderConstantBuffers(mPlaneVertexShaderResource, planeConstantBufferData, planeConstantBufferSizes, 2);
 
-	ID3D11Device* device = static_cast<DX3D11Renderer*>(mRenderer)->GetDevice();
+	ID3D11Device* device = mRenderer->GetDevice();
 	DirectX::CreateWICTextureFromFile(device, L"Textures\\checkerboard.jpg", nullptr, &mCheckerboardSRV);
 
 	D3D11_SAMPLER_DESC samplerDesc;

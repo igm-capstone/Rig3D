@@ -51,7 +51,7 @@ GVertex main(Vertex vertex)
 	float z = (vertex.uv.y / depthPatchCount) + id.y * 1 / depthPatchCount;
 	float2 uv = float2(x, z);
 
-	float y = heightTexture.SampleLevel(samplerState, uv, 0).r * 10.0f;
+	float y = heightTexture.SampleLevel(samplerState, uv, 0).r * 1.0f;
 	float4 vertexPosition = float4(vertex.position.x, y, vertex.position.z, 1.0f);
 
 	matrix clip = mul(mul(vertex.world, view), projection);

@@ -1,7 +1,6 @@
 #include <Windows.h>
 #include "Rig3D\Engine.h"
 #include "Rig3D\Graphics\Interface\IScene.h"
-#include "Rig3D\Graphics\DirectX11\DX3D11Renderer.h"
 #include "Rig3D\Graphics\Interface\IMesh.h"
 #include "Rig3D\Common\Transform.h"
 #include "Memory\Memory\Memory.h"
@@ -23,6 +22,11 @@
 using namespace Rig3D;
 
 uint8_t				gMemory[1024];
+
+struct SH
+{
+	vec4f coefficients[9];
+};
 
 struct Vertex3
 {
@@ -57,7 +61,8 @@ public:
 	SkyboxData					mSkyboxData;
 	ModelData					mModelData;
 	LightData					mLightData;
-
+	SH							mSHData[6];	// Prefilter
+	SH							mSH;		// Final
 	Camera						mCamera;
 	LinearAllocator				mAllocator;
 
@@ -65,7 +70,7 @@ public:
 	IMesh*						mSkyboxMesh;
 	IMesh*						mIcosphereMesh;
 
-	IRenderer*					mRenderer;
+	TSingleton<IRenderer, DX3D11Renderer>*	mRenderer;
 	IShader*					mPBLSkyboxVertexShader;
 	IShader*					mPBLSkyboxPixelShader;
 	IShader*					mPBLModelVertexShader;
@@ -81,6 +86,9 @@ public:
 	ID3D11DepthStencilState*	mDepthStencilState;
 
 	ID3D11ComputeShader*		mSHComputeShader;
+	ID3D11Buffer*				mSHUAVBuffer;
+	ID3D11Buffer*				mSHStagingBuffer;
+	ID3D11UnorderedAccessView*	mSHUAV;
 
 	PhysicallyBasedLightingSample();
 	~PhysicallyBasedLightingSample();
@@ -116,7 +124,10 @@ PhysicallyBasedLightingSample::PhysicallyBasedLightingSample() :
 	mMouseY(0.0f),
 	mInstanceCount(INSTANCE_ROWS * INSTANCE_COLUMNS),
 	mDepthStencilState(nullptr),
-	mSHComputeShader(nullptr)
+	mSHComputeShader(nullptr),
+	mSHUAVBuffer(nullptr),
+	mSHStagingBuffer(nullptr),
+	mSHUAV(nullptr)
 {
 	mOptions.mWindowCaption = "Physically Based Lighting Sample";
 	mOptions.mWindowWidth = 1200;
@@ -129,11 +140,14 @@ PhysicallyBasedLightingSample::~PhysicallyBasedLightingSample()
 {
 	ReleaseMacro(mDepthStencilState);
 	ReleaseMacro(mSHComputeShader);
+	ReleaseMacro(mSHUAVBuffer);
+	ReleaseMacro(mSHStagingBuffer);
+	ReleaseMacro(mSHUAV);
 }
 
 void PhysicallyBasedLightingSample::VInitialize()
 {
-	mRenderer = &DX3D11Renderer::SharedInstance();
+	mRenderer = mEngine->GetRenderer();
 	mRenderer->SetDelegate(this);
 
 	mCamera.mTransform.SetPosition(0.0f, 0.0f, -15.0f);
@@ -159,13 +173,14 @@ void PhysicallyBasedLightingSample::VUpdate(double milliseconds)
 
 void PhysicallyBasedLightingSample::VRender()
 {
-	ID3D11DeviceContext* deviceContext	= static_cast<DX3D11Renderer*>(mRenderer)->GetDeviceContext();
-	DX3D11Renderer*	renderer			= reinterpret_cast<DX3D11Renderer*>(mRenderer);
+	ID3D11DeviceContext* deviceContext	= mRenderer->GetDeviceContext();
+
+	PrefilterCubeMap();
 
 	float color[4] = { 1.0f, 1.0, 1.0f, 1.0f };
 	mRenderer->VSetContextTargetWithDepth();
 	mRenderer->VClearContext(color, 1.0f, 0);
-	deviceContext->RSSetViewports(1, &renderer->GetViewport());
+	deviceContext->RSSetViewports(1, &mRenderer->GetViewport());
 
 	deviceContext->OMSetDepthStencilState(nullptr, 1);
 
@@ -179,6 +194,7 @@ void PhysicallyBasedLightingSample::VRender()
 	mRenderer->VUpdateShaderConstantBuffer(mPBLModelShaderResource, &mLightData, 1);
 	mRenderer->VSetVertexShaderConstantBuffer(mPBLModelShaderResource, 0, 0);
 	mRenderer->VSetPixelShaderConstantBuffer(mPBLModelShaderResource, 1, 0);
+	mRenderer->VSetPixelShaderConstantBuffer(mPBLModelShaderResource, 2, 1);
 
 	mRenderer->VBindMesh(mIcosphereMesh);
 	mRenderer->VSetVertexShaderInstanceBuffers(mPBLModelShaderResource);
@@ -194,7 +210,7 @@ void PhysicallyBasedLightingSample::VRender()
 
 	mRenderer->VUpdateShaderConstantBuffer(mPBLSkyboxShaderResource, &mSkyboxData, 0);
 	mRenderer->VSetVertexShaderConstantBuffer(mPBLSkyboxShaderResource, 0, 0);
-
+	
 	mRenderer->VSetPixelShaderResourceViews(mPBLSkyboxShaderResource);
 	mRenderer->VSetPixelShaderSamplerStates(mPBLSkyboxShaderResource);
 
@@ -304,15 +320,15 @@ void PhysicallyBasedLightingSample::InitializeShaderResources()
 
 	mRenderer->VCreateShaderResource(&mPBLModelShaderResource, &mAllocator);
 
-	size_t	modelConstantBufferSizes[] = { sizeof(ModelData), sizeof(LightData) };
-	void*	modelData[] = { &mModelData, &mLightData };
-	mRenderer->VCreateShaderConstantBuffers(mPBLModelShaderResource, modelData, modelConstantBufferSizes, 2);
+	size_t	modelConstantBufferSizes[] = { sizeof(ModelData), sizeof(LightData), sizeof(SH) };
+	void*	modelData[] = { &mModelData, &mLightData, &mSH };
+	mRenderer->VCreateShaderConstantBuffers(mPBLModelShaderResource, modelData, modelConstantBufferSizes, 3);
 
 	size_t instanceBufferSizes[] = { sizeof(mat4f) * mInstanceCount, sizeof(vec2f) * mInstanceCount };
 	UINT strides[] = { sizeof(mat4f), sizeof(vec2f) };
 	UINT offsets[] = { 0, 0 };
-	void* data[] = { &mSphereWorldMatrices, &mSphereMaterials };
-	mRenderer->VCreateDynamicShaderInstanceBuffers(mPBLModelShaderResource, data, instanceBufferSizes, strides, offsets, 2);
+	void* instanceData[] = { &mSphereWorldMatrices, &mSphereMaterials };
+	mRenderer->VCreateDynamicShaderInstanceBuffers(mPBLModelShaderResource, instanceData, instanceBufferSizes, strides, offsets, 2);
 	mRenderer->VUpdateShaderInstanceBuffer(mPBLModelShaderResource, mSphereWorldMatrices, instanceBufferSizes[0], 0);
 	mRenderer->VUpdateShaderInstanceBuffer(mPBLModelShaderResource, mSphereMaterials, instanceBufferSizes[1], 1);
 
@@ -338,24 +354,49 @@ void PhysicallyBasedLightingSample::InitializeShaderResources()
 
 	ID3D11Device* device = reinterpret_cast<DX3D11Renderer *>(mRenderer)->GetDevice();
 	device->CreateDepthStencilState(&depthStencilDesc, &mDepthStencilState);
+
+	D3D11_BUFFER_DESC bufferDesc;
+	ZeroMemory(&bufferDesc, sizeof(D3D11_BUFFER_DESC));
+	bufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
+	bufferDesc.ByteWidth = sizeof(SH) * 6;
+	bufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+	bufferDesc.StructureByteStride = sizeof(SH);
+
+	D3D11_SUBRESOURCE_DATA data;
+	data.pSysMem = &mSHData;
+
+	device->CreateBuffer(&bufferDesc, &data, &mSHUAVBuffer);
+
+	bufferDesc.Usage = D3D11_USAGE_STAGING;
+	bufferDesc.BindFlags = 0;
+	bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+	device->CreateBuffer(&bufferDesc, nullptr, &mSHStagingBuffer);
+
+	D3D11_UNORDERED_ACCESS_VIEW_DESC UAVDesc;
+	ZeroMemory(&UAVDesc, sizeof(D3D11_UNORDERED_ACCESS_VIEW_DESC));
+	UAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+	UAVDesc.Buffer.FirstElement = 0;
+	UAVDesc.Format = DXGI_FORMAT_UNKNOWN;
+	UAVDesc.Buffer.NumElements = bufferDesc.ByteWidth / bufferDesc.StructureByteStride;
+
+	device->CreateUnorderedAccessView(mSHUAVBuffer, &UAVDesc, &mSHUAV);
 }
 
 void PhysicallyBasedLightingSample::InitializeLighting()
 {
 	mLightData.LightDirection = cliqCity::graphicsMath::normalize(vec4f(1.0f, -1.0f, 1.0f, 0.0f));
 
-	PrefilterCubeMap();
 }
 
 void PhysicallyBasedLightingSample::PrefilterCubeMap()
 {
-	ID3D11ShaderResourceView** SRVs = reinterpret_cast<DX11ShaderResource*>(mRenderer)->GetShaderResourceViews();
+	ID3D11ShaderResourceView** SRVs = reinterpret_cast<DX11ShaderResource*>(mPBLSkyboxShaderResource)->GetShaderResourceViews();
+	ID3D11SamplerState** ss = reinterpret_cast<DX11ShaderResource*>(mPBLSkyboxShaderResource)->GetSamplerStates();
 
 	ID3D11Resource* resource;
 	SRVs[0]->GetResource(&resource);
 
 	ID3D11Texture2D* textureCube = reinterpret_cast<ID3D11Texture2D*>(resource);
-	
 	D3D11_TEXTURE2D_DESC textureDesc;
 	textureCube->GetDesc(&textureDesc);
 
@@ -363,10 +404,33 @@ void PhysicallyBasedLightingSample::PrefilterCubeMap()
 	ID3D11DeviceContext* deviceContext = static_cast<DX3D11Renderer*>(mRenderer)->GetDeviceContext();
 	deviceContext->CSSetShader(mSHComputeShader, nullptr, 0);
 	deviceContext->CSSetShaderResources(0, 1, &SRVs[0]);
+	deviceContext->CSSetSamplers(0, 1, &ss[0]);
+
+	deviceContext->CSSetUnorderedAccessViews(0, 1, &mSHUAV, nullptr);
 	deviceContext->Dispatch(6, 1, 1);
 	deviceContext->CSSetShader(nullptr, nullptr, 0);
 	deviceContext->CSSetShaderResources(0, 1, nullSRV);
 
+	deviceContext->CopyResource(mSHStagingBuffer, mSHUAVBuffer);
+
+	D3D11_MAPPED_SUBRESOURCE mappedSubresource;
+	deviceContext->Map(mSHStagingBuffer, 0, D3D11_MAP_READ, 0, &mappedSubresource);
+	SH* sh = reinterpret_cast<SH*>(mappedSubresource.pData);
+	memcpy(mSHData, sh, sizeof(SH) * 6);
+	deviceContext->Unmap(mSHStagingBuffer, 0);
+
+	for (uint32_t i = 0; i < 6; i++)
+	{
+		mSH.coefficients[0] += mSHData[i].coefficients[0];
+		mSH.coefficients[1] += mSHData[i].coefficients[1];
+		mSH.coefficients[2] += mSHData[i].coefficients[2];
+		mSH.coefficients[3] += mSHData[i].coefficients[3];
+		mSH.coefficients[4] += mSHData[i].coefficients[4];
+		mSH.coefficients[5] += mSHData[i].coefficients[5];
+		mSH.coefficients[6] += mSHData[i].coefficients[6];
+		mSH.coefficients[7] += mSHData[i].coefficients[7];
+		mSH.coefficients[8] += mSHData[i].coefficients[8];
+	}
 }
 
 void PhysicallyBasedLightingSample::HandleInput(Input& input)

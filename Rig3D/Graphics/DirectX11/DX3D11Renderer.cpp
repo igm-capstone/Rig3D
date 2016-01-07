@@ -2,7 +2,6 @@
 #include "Graphics\DirectX11\DX11Mesh.h"
 #include "Graphics/DirectX11/DX11Shader.h"
 #include "Graphics/DirectX11/DX11ShaderResource.h"
-#include "Rig3D\Engine.h"
 #include "rig_defines.h"
 #include "Rig3D\Graphics\DirectX11\DX11RenderContext.h"
 #include "Rig3D\Graphics\DirectX11\DirectXTK\Inc\WICTextureLoader.h"
@@ -24,7 +23,7 @@ DX3D11Renderer& DX3D11Renderer::SharedInstance()
 
 DX3D11Renderer::DX3D11Renderer()
 {
-	mGraphicsAPI = GRAPHICS_API_DIRECTX11;
+	//mGraphicsAPI = GRAPHICS_API_DIRECTX11;
 }
 
 DX3D11Renderer::~DX3D11Renderer()
@@ -34,12 +33,12 @@ DX3D11Renderer::~DX3D11Renderer()
 
 int DX3D11Renderer::VInitialize(HINSTANCE hInstance, HWND hwnd, Options options)
 {
-	mHINSTANCE				= hInstance;
+	/*mHINSTANCE				= hInstance;
 	mHWND					= hwnd;
 	mWindowWidth			= options.mWindowWidth;
 	mWindowHeight			= options.mWindowHeight;
 	mWindowCaption			= options.mWindowCaption;
-	mFullScreen				= options.mFullScreen;
+	mFullScreen				= options.mFullScreen;*/
 	mDriverType				= D3D_DRIVER_TYPE_HARDWARE;
 	mEnable4xMsaa			= false;
 	mMSAA4xQuality			= 0;
@@ -52,19 +51,19 @@ int DX3D11Renderer::VInitialize(HINSTANCE hInstance, HWND hwnd, Options options)
 
 	ZeroMemory(&mViewport, sizeof(D3D11_VIEWPORT));
 
-	if (InitializeD3D11() == RIG_ERROR) 
+	if (InitializeD3D11(hwnd, options) == RIG_ERROR) 
 	{
 		return RIG_ERROR;
 	}
 
-	WMEventHandler::SharedInstance().RegisterObserver(WM_SIZE, this);
+	/*WMEventHandler::SharedInstance().RegisterObserver(WM_SIZE, this);
 	WMEventHandler::SharedInstance().RegisterObserver(WM_ENTERSIZEMOVE, this);
-	WMEventHandler::SharedInstance().RegisterObserver(WM_EXITSIZEMOVE, this);
+	WMEventHandler::SharedInstance().RegisterObserver(WM_EXITSIZEMOVE, this);*/
 
 	return RIG_SUCCESS;
 }
 
-int DX3D11Renderer::InitializeD3D11()
+int DX3D11Renderer::InitializeD3D11(HWND hwnd, Options options)
 {
 	UINT createDeviceFlags = 0;
 
@@ -75,8 +74,8 @@ int DX3D11Renderer::InitializeD3D11()
 
 	// Set up a swap chain description
 	DXGI_SWAP_CHAIN_DESC swapChainDesc;
-	swapChainDesc.BufferDesc.Width = mWindowWidth;
-	swapChainDesc.BufferDesc.Height = mWindowHeight;
+	swapChainDesc.BufferDesc.Width = options.mWindowWidth;
+	swapChainDesc.BufferDesc.Height = options.mWindowHeight;
 	swapChainDesc.BufferDesc.RefreshRate.Numerator = 60;
 	swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
 	swapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -84,7 +83,7 @@ int DX3D11Renderer::InitializeD3D11()
 	swapChainDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
 	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	swapChainDesc.BufferCount = 1;
-	swapChainDesc.OutputWindow = mHWND;
+	swapChainDesc.OutputWindow = hwnd;
 	swapChainDesc.Windowed = true;
 	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 	swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;	// Enables Alt + Enter Windowed / Full Screen Toggle.
@@ -131,15 +130,15 @@ int DX3D11Renderer::InitializeD3D11()
 		&mMSAA4xQuality));
 	assert(mMSAA4xQuality > 0); // Potential problem if quality is 0
 
-	HR(mSwapChain->SetFullscreenState(mFullScreen, NULL));
+	HR(mSwapChain->SetFullscreenState(options.mFullScreen, NULL));
 	// The remaining steps also need to happen each time the window
 	// is resized, so just run the OnResize method
-	VOnResize();
+	VOnResize(options.mWindowWidth, options.mWindowHeight);
 
 	return 0;
 }
 
-void DX3D11Renderer::VOnResize()
+void DX3D11Renderer::VOnResize(int windowWidth, int windowHeight)
 {
 	// Release the views, since we'll be destroying
 	// the corresponding buffers.
@@ -151,8 +150,8 @@ void DX3D11Renderer::VOnResize()
 	// recreate the render target view
 	HR(mSwapChain->ResizeBuffers(
 		1,
-		mWindowWidth,
-		mWindowHeight,
+		windowWidth,
+		windowHeight,
 		DXGI_FORMAT_R8G8B8A8_UNORM,
 		0));
 	ID3D11Texture2D* backBuffer;
@@ -160,7 +159,7 @@ void DX3D11Renderer::VOnResize()
 	HR(mDevice->CreateRenderTargetView(backBuffer, 0, &mRenderTargetView));
 	ReleaseMacro(backBuffer);
 
-	VCreateDepthStencilTexture2D(&mDepthStencilBuffer);
+	VCreateDepthStencilTexture2D(&mDepthStencilBuffer, windowWidth, windowHeight);
 	HR(mDevice->CreateDepthStencilView(mDepthStencilBuffer, 0, &mDepthStencilView));
 
 	// Bind these views to the pipeline, so rendering actually
@@ -170,15 +169,15 @@ void DX3D11Renderer::VOnResize()
 	// Update the viewport and set it on the device
 	mViewport.TopLeftX = 0;
 	mViewport.TopLeftY = 0;
-	mViewport.Width = static_cast<float>(mWindowWidth);
-	mViewport.Height = static_cast<float>(mWindowHeight);
+	mViewport.Width = static_cast<float>(windowWidth);
+	mViewport.Height = static_cast<float>(windowHeight);
 	mViewport.MinDepth = 0.0f;
 	mViewport.MaxDepth = 1.0f;
 	mDeviceContext->RSSetViewports(1, &mViewport);
 
-	if (mDelegate) {
-		mDelegate->VOnResize();
-	}
+	//if (mDelegate) {
+	//	mDelegate->VOnResize();
+	//}
 }
 
 void DX3D11Renderer::VUpdateScene(const double& milliseconds)
@@ -540,11 +539,11 @@ void DX3D11Renderer::VCreateNativeFormat(void* nativeFormat, InputFormat texture
 	}
 }
 
-void DX3D11Renderer::VCreateTexture2D(void* texture, void* data, uint32_t mipLevels, InputFormat textureFormat)
+void DX3D11Renderer::VCreateTexture2D(void* texture, void* data, uint32_t mipLevels, InputFormat textureFormat, uint32_t width, uint32_t height)
 {
 	D3D11_TEXTURE2D_DESC texture2DDesc;
-	texture2DDesc.Width = GetWindowWidth();
-	texture2DDesc.Height = GetWindowHeight();
+	texture2DDesc.Width = width;
+	texture2DDesc.Height = height;
 	texture2DDesc.ArraySize = 1;
 	texture2DDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
 	texture2DDesc.CPUAccessFlags = 0;
@@ -567,11 +566,11 @@ void DX3D11Renderer::VCreateTexture2D(void* texture, void* data, uint32_t mipLev
 	mDevice->CreateTexture2D(&texture2DDesc, pTextureData, reinterpret_cast<ID3D11Texture2D**>(texture));
 }
 
-void DX3D11Renderer::VCreateDepthTexture2D(void* texture2D)
+void DX3D11Renderer::VCreateDepthTexture2D(void* texture2D, uint32_t width, uint32_t height)
 {
 	D3D11_TEXTURE2D_DESC texture2DDesc;
-	texture2DDesc.Width = GetWindowWidth();
-	texture2DDesc.Height = GetWindowHeight();
+	texture2DDesc.Width = width;
+	texture2DDesc.Height = height;
 	texture2DDesc.ArraySize = 1;
 	texture2DDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 	texture2DDesc.CPUAccessFlags = 0;
@@ -585,11 +584,11 @@ void DX3D11Renderer::VCreateDepthTexture2D(void* texture2D)
 	mDevice->CreateTexture2D(&texture2DDesc, nullptr, reinterpret_cast<ID3D11Texture2D**>(texture2D));
 }
 
-void DX3D11Renderer::VCreateDepthResourceTexture2D(void * texture2D)
+void DX3D11Renderer::VCreateDepthResourceTexture2D(void * texture2D, uint32_t width, uint32_t height)
 {
 	D3D11_TEXTURE2D_DESC texture2DDesc;
-	texture2DDesc.Width = GetWindowWidth();
-	texture2DDesc.Height = GetWindowHeight();
+	texture2DDesc.Width = width;
+	texture2DDesc.Height = height;
 	texture2DDesc.ArraySize = 1;
 	texture2DDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
 	texture2DDesc.CPUAccessFlags = 0;
@@ -603,11 +602,11 @@ void DX3D11Renderer::VCreateDepthResourceTexture2D(void * texture2D)
 	mDevice->CreateTexture2D(&texture2DDesc, nullptr, reinterpret_cast<ID3D11Texture2D**>(texture2D));
 }
 
-void DX3D11Renderer::VCreateDepthStencilTexture2D(void* texture2D)
+void DX3D11Renderer::VCreateDepthStencilTexture2D(void* texture2D, uint32_t width, uint32_t height)
 {
 	D3D11_TEXTURE2D_DESC texture2DDesc;
-	texture2DDesc.Width = mWindowWidth;
-	texture2DDesc.Height = mWindowHeight;
+	texture2DDesc.Width = width;
+	texture2DDesc.Height = height;
 	texture2DDesc.MipLevels = 1;
 	texture2DDesc.ArraySize = 1;
 	texture2DDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
@@ -632,11 +631,11 @@ void DX3D11Renderer::VCreateDepthStencilTexture2D(void* texture2D)
 	mDevice->CreateTexture2D(&texture2DDesc, nullptr, reinterpret_cast<ID3D11Texture2D**>(texture2D));
 }
 
-void DX3D11Renderer::VCreateDepthStencilResourceTexture2D(void * texture2D)
+void DX3D11Renderer::VCreateDepthStencilResourceTexture2D(void * texture2D, uint32_t width, uint32_t height)
 {
 	D3D11_TEXTURE2D_DESC texture2DDesc;
-	texture2DDesc.Width = mWindowWidth;
-	texture2DDesc.Height = mWindowHeight;
+	texture2DDesc.Width = width;
+	texture2DDesc.Height = height;
 	texture2DDesc.MipLevels = 1;
 	texture2DDesc.ArraySize = 1;
 	texture2DDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
@@ -661,11 +660,11 @@ void DX3D11Renderer::VCreateDepthStencilResourceTexture2D(void * texture2D)
 	mDevice->CreateTexture2D(&texture2DDesc, nullptr, reinterpret_cast<ID3D11Texture2D**>(texture2D));
 }
 
-void DX3D11Renderer::VCreateRenderTexture2D(void* texture2D)
+void DX3D11Renderer::VCreateRenderTexture2D(void* texture2D, uint32_t width, uint32_t height)
 {
 	D3D11_TEXTURE2D_DESC texture2DDesc;
-	texture2DDesc.Width = GetWindowWidth();
-	texture2DDesc.Height = GetWindowHeight();
+	texture2DDesc.Width = width;
+	texture2DDesc.Height = height;
 	texture2DDesc.ArraySize = 1;
 	texture2DDesc.BindFlags = D3D11_BIND_RENDER_TARGET;
 	texture2DDesc.CPUAccessFlags = 0;
@@ -679,11 +678,11 @@ void DX3D11Renderer::VCreateRenderTexture2D(void* texture2D)
 	mDevice->CreateTexture2D(&texture2DDesc, nullptr, reinterpret_cast<ID3D11Texture2D**>(texture2D));
 }
 
-void DX3D11Renderer::VCreateRenderResourceTexture2D(void * texture2D)
+void DX3D11Renderer::VCreateRenderResourceTexture2D(void * texture2D, uint32_t width, uint32_t height)
 {
 	D3D11_TEXTURE2D_DESC texture2DDesc;
-	texture2DDesc.Width = GetWindowWidth();
-	texture2DDesc.Height = GetWindowHeight();
+	texture2DDesc.Width = width;
+	texture2DDesc.Height = height;
 	texture2DDesc.ArraySize = 1;
 	texture2DDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
 	texture2DDesc.CPUAccessFlags = 0;
@@ -1356,10 +1355,10 @@ void DX3D11Renderer::VCreateRenderContext(IRenderContext** renderContext, Linear
 	RIG_NEW(DX11RenderContext, allocator, *renderContext);
 }
 
-void DX3D11Renderer::VCreateContextDepthStencilTarget(IRenderContext* renderContext)
+void DX3D11Renderer::VCreateContextDepthStencilTarget(IRenderContext* renderContext, uint32_t width, uint32_t height)
 {
 	ID3D11Texture2D* texture2D;
-	VCreateDepthStencilTexture2D(&texture2D);
+	VCreateDepthStencilTexture2D(&texture2D, width, height);
 
 	D3D11_TEXTURE2D_DESC textureDesc;
 	texture2D->GetDesc(&textureDesc);
@@ -1373,14 +1372,14 @@ void DX3D11Renderer::VCreateContextDepthStencilTarget(IRenderContext* renderCont
 	ReleaseMacro(texture2D);
 }
 
-void DX3D11Renderer::VCreateContextTargets(IRenderContext* renderContext, const uint32_t& count)
+void DX3D11Renderer::VCreateContextTargets(IRenderContext* renderContext, const uint32_t& count, uint32_t width, uint32_t height)
 {
 	std::vector<ID3D11RenderTargetView*> RTVs(count);
 
 	for (uint32_t i = 0; i < count; i++)
 	{
 		ID3D11Texture2D* texture2D;
-		VCreateRenderTexture2D(&texture2D);
+		VCreateRenderTexture2D(&texture2D, width, height);
 
 		D3D11_TEXTURE2D_DESC textureDesc;
 		texture2D->GetDesc(&textureDesc);
@@ -1398,10 +1397,10 @@ void DX3D11Renderer::VCreateContextTargets(IRenderContext* renderContext, const 
 	reinterpret_cast<DX11RenderContext*>(renderContext)->SetRenderTargetViews(RTVs);
 }
 
-void DX3D11Renderer::VCreateContextDepthResourceTarget(IRenderContext* renderContext)
+void DX3D11Renderer::VCreateContextDepthResourceTarget(IRenderContext* renderContext, uint32_t width, uint32_t height)
 {
 	ID3D11Texture2D* texture2D;
-	VCreateDepthResourceTexture2D(&texture2D);
+	VCreateDepthResourceTexture2D(&texture2D, width, height);
 
 	D3D11_DEPTH_STENCIL_VIEW_DESC DSVDesc;
 	DSVDesc.Flags = 0;
@@ -1428,7 +1427,7 @@ void DX3D11Renderer::VCreateContextDepthResourceTarget(IRenderContext* renderCon
 	ReleaseMacro(texture2D);
 }
 
-void DX3D11Renderer::VCreateContextResourceTargets(IRenderContext* renderContext, const uint32_t& count)
+void DX3D11Renderer::VCreateContextResourceTargets(IRenderContext* renderContext, const uint32_t& count, uint32_t width, uint32_t height)
 {
 	std::vector<ID3D11RenderTargetView*> RTVs(count);
 	std::vector<ID3D11ShaderResourceView*> SRVs(count);
@@ -1436,7 +1435,7 @@ void DX3D11Renderer::VCreateContextResourceTargets(IRenderContext* renderContext
 	for (uint32_t i = 0; i < count; i++)
 	{
 		ID3D11Texture2D* texture2D;
-		VCreateRenderResourceTexture2D(&texture2D);
+		VCreateRenderResourceTexture2D(&texture2D, width, height);
 
 		D3D11_TEXTURE2D_DESC textureDesc;
 		texture2D->GetDesc(&textureDesc);
@@ -1585,84 +1584,84 @@ void DX3D11Renderer::VSwapBuffers()
 
 #pragma region IObserver
 
-void DX3D11Renderer::HandleEvent(const IEvent& iEvent)
-{
-	const WMEvent& wmEvent = static_cast<const WMEvent&>(iEvent);
-	switch (wmEvent.msg)
-	{
-	case WM_SIZE:
-		// Save the new client area dimensions.
-		mWindowWidth = LOWORD(wmEvent.lparam);
-		mWindowHeight = HIWORD(wmEvent.lparam);
-		if (mDevice)
-		{
-			if (wmEvent.wparam == SIZE_MINIMIZED)
-			{
-				mIsPaused = true;
-				mIsMinimized = true;
-				mIsMaximized = false;
-			}
-			else if (wmEvent.wparam == SIZE_MAXIMIZED)
-			{
-				mIsPaused = false;
-				mIsMinimized = false;
-				mIsMaximized = true;
-				VOnResize();
-			}
-			else if (wmEvent.wparam == SIZE_RESTORED)
-			{
-				// Restoring from minimized state?
-				if (mIsMinimized)
-				{
-					mIsPaused = false;
-					mIsMinimized = false;
-					VOnResize();
-				}
-
-				// Restoring from maximized state?
-				else if (mIsMaximized)
-				{
-					mIsPaused = false;
-					mIsMaximized = false;
-					VOnResize();
-				}
-				else if (mIsResizing)
-				{
-					// If user is dragging the resize bars, we do not resize 
-					// the buffers here because as the user continuously 
-					// drags the resize bars, a stream of WM_SIZE messages are
-					// sent to the window, and it would be pointless (and slow)
-					// to resize for each WM_SIZE message received from dragging
-					// the resize bars.  So instead, we reset after the user is 
-					// done resizing the window and releases the resize bars, which 
-					// sends a WM_EXITSIZEMOVE message.
-				}
-				else // API call such as SetWindowPos or mSwapChain->SetFullscreenState.
-				{
-					VOnResize();
-				}
-			}
-		}
-		break;
-		// WM_EXITSIZEMOVE is sent when the user grabs the resize bars.
-	case WM_ENTERSIZEMOVE:
-		mIsPaused = true;
-		mIsResizing = true;
-		//timer.Stop();
-		break;
-
-		// WM_EXITSIZEMOVE is sent when the user releases the resize bars.
-		// Here we reset everything based on the new window dimensions.
-	case WM_EXITSIZEMOVE:
-		mIsPaused = false;
-		mIsResizing = false;
-		//timer.Start();
-		VOnResize();
-		break;
-	default:
-		break;
-	}
-}
+//void DX3D11Renderer::HandleEvent(const IEvent& iEvent)
+//{
+//	const WMEvent& wmEvent = static_cast<const WMEvent&>(iEvent);
+//	switch (wmEvent.msg)
+//	{
+//	case WM_SIZE:
+//		// Save the new client area dimensions.
+//		mWindowWidth = LOWORD(wmEvent.lparam);
+//		mWindowHeight = HIWORD(wmEvent.lparam);
+//		if (mDevice)
+//		{
+//			if (wmEvent.wparam == SIZE_MINIMIZED)
+//			{
+//				mIsPaused = true;
+//				mIsMinimized = true;
+//				mIsMaximized = false;
+//			}
+//			else if (wmEvent.wparam == SIZE_MAXIMIZED)
+//			{
+//				mIsPaused = false;
+//				mIsMinimized = false;
+//				mIsMaximized = true;
+//				VOnResize();
+//			}
+//			else if (wmEvent.wparam == SIZE_RESTORED)
+//			{
+//				// Restoring from minimized state?
+//				if (mIsMinimized)
+//				{
+//					mIsPaused = false;
+//					mIsMinimized = false;
+//					VOnResize();
+//				}
+//
+//				// Restoring from maximized state?
+//				else if (mIsMaximized)
+//				{
+//					mIsPaused = false;
+//					mIsMaximized = false;
+//					VOnResize();
+//				}
+//				else if (mIsResizing)
+//				{
+//					// If user is dragging the resize bars, we do not resize 
+//					// the buffers here because as the user continuously 
+//					// drags the resize bars, a stream of WM_SIZE messages are
+//					// sent to the window, and it would be pointless (and slow)
+//					// to resize for each WM_SIZE message received from dragging
+//					// the resize bars.  So instead, we reset after the user is 
+//					// done resizing the window and releases the resize bars, which 
+//					// sends a WM_EXITSIZEMOVE message.
+//				}
+//				else // API call such as SetWindowPos or mSwapChain->SetFullscreenState.
+//				{
+//					VOnResize();
+//				}
+//			}
+//		}
+//		break;
+//		// WM_EXITSIZEMOVE is sent when the user grabs the resize bars.
+//	case WM_ENTERSIZEMOVE:
+//		mIsPaused = true;
+//		mIsResizing = true;
+//		//timer.Stop();
+//		break;
+//
+//		// WM_EXITSIZEMOVE is sent when the user releases the resize bars.
+//		// Here we reset everything based on the new window dimensions.
+//	case WM_EXITSIZEMOVE:
+//		mIsPaused = false;
+//		mIsResizing = false;
+//		//timer.Start();
+//		VOnResize();
+//		break;
+//	default:
+//		break;
+//	}
+//}
 
 #pragma endregion 
 

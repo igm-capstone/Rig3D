@@ -18,6 +18,11 @@ cbuffer BRDF_Inputs : register(b0)
 	float3	P;	// Camera Position
 }
 
+cbuffer SH : register(b1)
+{
+	float4 sh[9];
+}
+
 float sDot(float3 A, float3 B)
 {
 	return saturate(dot(A, B));
@@ -78,12 +83,32 @@ float4 main(Pixel pixel) : SV_TARGET
 	// - Roughness
 	// - Metalness
 
-	return diffuse + ((D(H, N, pixel.material.x) * F(V, H, pixel.material.y) * G(-L, V, N, pixel.material.x)) / 4.0f;
+	//return diffuse + ((D(H, N, pixel.material.x) * F(V, H, pixel.material.y) * G(-L, V, N, pixel.material.x)) / 4.0f;
+
+	diffuse += ((D(H, N, pixel.material.x) * F(V, H, pixel.material.y) * G(-L, V, N, pixel.material.x)) / 4.0f);
 
 	// Indirect Diffuse = Spherical Harmonics  = Another Cubemap
 		// 
+		// 0 = 00
+		// 1 = 1-1
+		// 2 = 10
+		// 3 = 11
+		// 4 = 2-2
+		// 5 = 2-1
+		// 6 = 20
+		// 7 = 21
+		// 8 = 22
+	float c1 = 0.429043f;
+	float c2 = 0.511664f;
+	float c3 = 0.743125f;
+	float c4 = 0.886227f;
+	float c5 = 0.247708f;
 
+	float3 E = (c1 * sh[8] * (N.x * N.x) - (N.y * N.y)) + (c3 * sh[6] * (N.z * N.z)) + (c4 * sh[0]) - (c5 * sh[6])
+		+ (2.0f * c1 * (sh[4] * N.x * N.y + sh[7] * N.x * N.z + sh[5] * N.y * N.z))
+		+ (2.0f * c2 * (sh[3] * N.x + sh[1] * N.y + sh[2] * N.z));
 
+	return diffuse + float4(E, 1.0f);
 	// Indirect Specular = Create cubemap
 		// - Environment BRDF
 		// - Roughness

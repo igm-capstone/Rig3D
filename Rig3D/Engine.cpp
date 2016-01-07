@@ -1,6 +1,5 @@
 #include "Engine.h"
 #include "rig_defines.h"
-#include "Rig3D\Graphics\DirectX11\DX3D11Renderer.h"
 #include "Rig3D\Graphics\Interface\IScene.h"
 
 using namespace Rig3D;
@@ -30,7 +29,11 @@ int Engine::Initialize(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine
 		return RIG_ERROR;
 	}
 
-	mRenderer = (options.mGraphicsAPI == GRAPHICS_API_DIRECTX11) ? &DX3D11Renderer::SharedInstance() : NULL; // TO DO: OpenGL Renderer
+	mRenderer = &TSingleton<IRenderer, DX3D11Renderer>::SharedInstance();
+
+	TSingleton<IRenderer, DX3D11Renderer>* v = &TSingleton<IRenderer, DX3D11Renderer>::SharedInstance();
+
+	//mRenderer = (options.mGraphicsAPI == GRAPHICS_API_DIRECTX11) ? &DX3D11Renderer::SharedInstance() : NULL; // TO DO: OpenGL Renderer
 	if (mRenderer->VInitialize(hInstance, mHWND, options) == RIG_ERROR)
 	{
 		return RIG_ERROR;
@@ -63,11 +66,11 @@ int Engine::InitializeMainWindow(HINSTANCE hInstance, HINSTANCE prevInstance, PS
 	ex.hIconSm = NULL;
 
 	if (options.mFullScreen == false) {
-		ex.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+		ex.hbrBackground = static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH));
 	}
 
 	if (!RegisterClassEx(&ex)) {
-		MessageBox(0, L"RegisterClass Failed.", 0, 0);
+		MessageBox(nullptr, L"RegisterClass Failed.", nullptr, 0);
 		return RIG_ERROR;
 	}
 
@@ -146,8 +149,9 @@ void Engine::HandleEvent(const IEvent& iEvent)
 
 void Engine::RunScene(IScene* iScene)
 {
-	iScene->VInitialize();
+	iScene->mEngine = this;
 
+	iScene->VInitialize();
 	// The message loop
 	double deltaTime = 0.0;
 	mTimer->Reset();
@@ -165,7 +169,7 @@ void Engine::RunScene(IScene* iScene)
 	Shutdown();
 }
 
-IRenderer* Engine::GetRenderer() const
+TSingleton<IRenderer, DX3D11Renderer>* Engine::GetRenderer() const
 {
 	return mRenderer;
 }

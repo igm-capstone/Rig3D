@@ -1,7 +1,6 @@
 #include <Windows.h>
 #include "Rig3D\Engine.h"
 #include "Rig3D\Graphics\Interface\IScene.h"
-#include "Rig3D\Graphics\DirectX11\DX3D11Renderer.h"
 #include "Rig3D\Graphics\Interface\IMesh.h"
 #include "Rig3D\Common\Transform.h"
 #include "Memory\Memory\Memory.h"
@@ -92,7 +91,7 @@ public:
 	SphereCollider*		mBoidColliders;
 	Boid*				mBoids;
 
-	IRenderer*			mRenderer;
+	TSingleton<IRenderer, DX3D11Renderer>*	mRenderer;
 	IShader*			mBoidVertexShader;
 	IShader*			mBoidPixelShader;
 	IShaderResource*	mBoidShaderResouce;
@@ -155,7 +154,7 @@ GroupMotionSample::~GroupMotionSample()
 
 void GroupMotionSample::VInitialize()
 {
-	mRenderer = &DX3D11Renderer::SharedInstance();
+	mRenderer = mEngine->GetRenderer();
 	mRenderer->SetDelegate(this);
 
 	time_t now;
@@ -609,7 +608,7 @@ void GroupMotionSample::VRender()
 	mRenderer->VSetVertexShaderConstantBuffer(mBoidShaderResouce, 0, 0);
 	mRenderer->VSetPixelShaderConstantBuffer(mBoidShaderResouce, 1, 0);
 
-	ID3D11DeviceContext* deviceContext = static_cast<DX3D11Renderer*>(mRenderer)->GetDeviceContext();
+	ID3D11DeviceContext* deviceContext = mRenderer->GetDeviceContext();
 	deviceContext->DrawIndexedInstanced(mBoidMesh->GetIndexCount(), INSTANCE_COUNT, 0, 0, 0);
 
 	mRenderer->VBindMesh(mPlaneMesh);

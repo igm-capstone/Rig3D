@@ -5,6 +5,9 @@
 #include "Rig3D\Common\Input.h"
 #include "Rig3D\rig_defines.h"
 #include "Rig3D\Options.h"
+#include "Rig3D\Singleton.h"
+#include "Rig3D\Graphics\Interface\IRenderer.h"
+#include "Rig3D\Graphics\DirectX11\DX3D11Renderer.h"
 
 #ifdef _WINDLL
 #define RIG3D __declspec(dllexport)
@@ -14,7 +17,6 @@
 
 namespace Rig3D
 {
-	class IRenderer;
 	class IScene;
 
 	class RIG3D Engine : public virtual IObserver
@@ -23,30 +25,27 @@ namespace Rig3D
 		Engine();
 		~Engine();
 
-		int		Initialize(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, int showCmdEngine, Options options);
-		void	BeginScene();
-		void	EndScene();
-		int		Shutdown();
-		void	HandleEvent(const IEvent& iEvent) override;
+		int		Initialize(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, int showCmd, Options options);
+			void	BeginScene();
+			void	EndScene();
+			int		Shutdown();
+			void	HandleEvent(const IEvent& iEvent) override;
 
-		void	RunScene(IScene* iScene);
+			void	RunScene(IScene* iScene);
 
-		IRenderer* GetRenderer() const;
+			TSingleton<IRenderer, DX3D11Renderer>* GetRenderer() const;
 
 	protected:
 		HDC mHDC;
 		HWND mHWND;
-	
+
 	private:
 		WMEventHandler* mEventHandler;
 		Timer*			mTimer;
 		Input*			mInput;
-		IRenderer*		mRenderer;
+		TSingleton<IRenderer, DX3D11Renderer>*		mRenderer;
 		bool			mShouldQuit;
 
 		int InitializeMainWindow(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, int showCmd, Options options);
 	};
 }
-
-
-

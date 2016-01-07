@@ -13,7 +13,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{77B5F1D0-8A48-4F96-AFF6-366D6FBAF351}</ProjectGuid>
     <RootNamespace>Rig3D</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.10240.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -104,6 +104,7 @@
     <ClInclude Include="SceneGraph.h" />
     <ClInclude Include="TaskDispatch\Task.h" />
     <ClInclude Include="TaskDispatch\TaskDispatcher.h" />
+    <ClInclude Include="Singleton.h" />
     <ClInclude Include="Visibility.h" />
   </ItemGroup>
   <ItemGroup>
@@ -125,7 +126,6 @@
     <ClCompile Include="Graphics\DirectX11\imgui\imgui_demo.cpp" />
     <ClCompile Include="Graphics\DirectX11\imgui\imgui_draw.cpp" />
     <ClCompile Include="Graphics\Interface\IMesh.cpp" />
-    <ClCompile Include="Graphics\Interface\IRenderer.cpp" />
     <ClCompile Include="Graphics\Interface\IScene.cpp" />
     <ClCompile Include="Options.h" />
     <ClCompile Include="SceneGraph.cpp" />

@@ -1,7 +1,6 @@
 #include <Windows.h>
 #include "Rig3D\Engine.h"
 #include "Rig3D\Graphics\Interface\IScene.h"
-#include "Rig3D\Graphics\DirectX11\DX3D11Renderer.h"
 #include "Rig3D\Graphics\Interface\IMesh.h"
 #include "Rig3D\Common\Transform.h"
 #include "Memory\Memory\Memory.h"
@@ -130,7 +129,7 @@ public:
 	float							mMouseX;
 	float							mMouseY;
 
-	DX3D11Renderer*					mRenderer;
+	TSingleton<IRenderer, DX3D11Renderer>*				mRenderer;
 	ID3D11DeviceContext*			mDeviceContext;
 	ID3D11Device*					mDevice;
 
@@ -213,7 +212,7 @@ public:
 
 	void VInitialize()	override
 	{
-		mRenderer = &DX3D11Renderer::SharedInstance();
+		mRenderer = mEngine->GetRenderer();
 		mRenderer->SetDelegate(this);
 
 		mDevice = mRenderer->GetDevice();

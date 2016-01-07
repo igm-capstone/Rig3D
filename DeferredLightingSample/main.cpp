@@ -1,7 +1,6 @@
 #include <Windows.h>
 #include "Rig3D\Engine.h"
 #include "Rig3D\Graphics\Interface\IScene.h"
-#include "Rig3D\Graphics\DirectX11\DX3D11Renderer.h"
 #include "Rig3D\Graphics\Interface\IMesh.h"
 #include "Rig3D\Common\Transform.h"
 #include "Memory\Memory\Memory.h"
@@ -53,7 +52,7 @@ void PerformModelLoadTask(const cliqCity::multicore::TaskData& data)
 {
 	OBJBasicResource<Vertex3> resource(reinterpret_cast<const char*>(data.mKernelData));
 	MeshLibrary<LinearAllocator>* meshLibrary = reinterpret_cast<MeshLibrary<LinearAllocator>*>(data.mStream.in[0]);
-	IRenderer* drawContext = reinterpret_cast<IRenderer*>(data.mStream.in[1]);
+	TSingleton<IRenderer, DX3D11Renderer>* drawContext = reinterpret_cast<TSingleton<IRenderer, DX3D11Renderer>*>(data.mStream.in[1]);
 	IMesh** mesh = reinterpret_cast<IMesh**>(data.mStream.in[2]);
 
 	std::lock_guard<std::mutex> lock(gMemoryMutex);
@@ -94,7 +93,7 @@ public:
 	MeshLibrary<LinearAllocator>	mMeshLibrary;
 	LinearAllocator					mAllocator;
 	
-	DX3D11Renderer*					mRenderer;
+	TSingleton<IRenderer, DX3D11Renderer>*	mRenderer;
 	IMesh*							mTorusMesh;
 	IMesh*							mCylinderMesh;
 	IMesh*							mSphereMesh;
@@ -247,7 +246,7 @@ public:
 
 	void VInitialize() override
 	{
-		mRenderer = &DX3D11Renderer::SharedInstance();
+		mRenderer = mEngine->GetRenderer();
 		mRenderer->SetDelegate(this);
 		mDevice = mRenderer->GetDevice();
 		mDeviceContext = mRenderer->GetDeviceContext();

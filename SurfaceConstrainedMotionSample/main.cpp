@@ -1,7 +1,6 @@
 #include <Windows.h>
 #include "Rig3D\Engine.h"
 #include "Rig3D\Graphics\Interface\IScene.h"
-#include "Rig3D\Graphics\DirectX11\DX3D11Renderer.h"
 #include "Rig3D\Graphics\Interface\IMesh.h"
 #include "Rig3D\Common\Transform.h"
 #include "Memory\Memory\Memory.h"
@@ -81,7 +80,7 @@ public:
 	mat4f				mDynamicWorldMatrics[INSTANCE_COUNT];
 	RigidBody			mRigidBodies[INSTANCE_COUNT];
 
-	IRenderer*			mRenderer;
+	TSingleton<IRenderer, DX3D11Renderer>*	mRenderer;
 	IShader*			mTerrainVertexShader;
 	IShader*			mTerrainPixelShader;
 	IShader*			mCapsuleVertexShader;
@@ -163,7 +162,7 @@ SurfaceConstrainedMotionSample::~SurfaceConstrainedMotionSample()
 
 void SurfaceConstrainedMotionSample::VInitialize()
 {
-	mRenderer = &DX3D11Renderer::SharedInstance();
+	mRenderer = mEngine->GetRenderer();
 	mRenderer->SetDelegate(this);
 
 	mCamera.mTransform.SetPosition({ 0.0f, 50.0f, -50.0f });
@@ -259,7 +258,7 @@ void SurfaceConstrainedMotionSample::InitializeShaders()
 	ID3DBlob* gsBlob;
 	D3DReadFileToBlob(L"TerrainGeometryShader.cso", &gsBlob);
 
-	ID3D11Device* device = reinterpret_cast<DX3D11Renderer*>(mRenderer)->GetDevice();
+	ID3D11Device* device = mRenderer->GetDevice();
 	device->CreateGeometryShader(gsBlob->GetBufferPointer(), gsBlob->GetBufferSize(), nullptr, &mGeometryShader);
 
 	ReleaseMacro(gsBlob);
@@ -301,8 +300,12 @@ void SurfaceConstrainedMotionSample::InitializeShaderResources()
 	{
 		//"Textures\\mt-tarawera-15m-dem.png",
 		//"Textures\\mt-tarawera-15m-bump.png"
-		"Textures\\morgulterrain.png",
-		"Textures\\morgulterrainbump.png"
+		//"Textures\\morgulterrain.png",
+		//"Textures\\morgulterrainbump.png"
+		"Textures\\rocks0.png",
+		"Textures\\rocks0_bump.png"
+		//"Textures\\rocks1.png",
+		//"Textures\\rocks1_bump.png"
 	};
 	mRenderer->VCreateShaderTextures2D(mShaderResouce, filename, 2);
 
@@ -319,7 +322,7 @@ void SurfaceConstrainedMotionSample::InitializeShaderResources()
 	D3D11_SUBRESOURCE_DATA data;
 	data.pSysMem = &mRigidBodies;
 
-	ID3D11Device* device = reinterpret_cast<DX3D11Renderer*>(mRenderer)->GetDevice();
+	ID3D11Device* device = mRenderer->GetDevice();
 	device->CreateBuffer(&bufferDesc, &data, &mRigidBodyComputeBuffer);
 
 	bufferDesc.Usage = D3D11_USAGE_STAGING;
@@ -417,6 +420,13 @@ void SurfaceConstrainedMotionSample::UpdateInput(Input& input)
 	{
 		mRigidBodies[0].position.x -= CAMERA_SPEED;
 	}
+
+	if (input.GetKeyDown(KEYCODE_R))
+	{
+		mRigidBodies[0].position = {0.0f, 5.0f, 0.0f };
+		mRigidBodies[0].velocity = { 0.0f, 0.0f, 0.0f };
+		mRigidBodies[0].forces = { 0.0f, 0.0f, 0.0f };
+	}
 }
 
 void SurfaceConstrainedMotionSample::UpdateCamera()
@@ -474,7 +484,7 @@ void SurfaceConstrainedMotionSample::Euler(RigidBody* rigidBodies, uint32_t coun
 
 void SurfaceConstrainedMotionSample::VRender()
 {
-	ID3D11DeviceContext* deviceContext = static_cast<DX3D11Renderer*>(mRenderer)->GetDeviceContext();
+	ID3D11DeviceContext* deviceContext = mRenderer->GetDeviceContext();
 
 	float color[4] = { 0.0f, 0.7294117647f, 1.0f, 1.0f };
 

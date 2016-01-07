@@ -1,7 +1,6 @@
 #include <Windows.h>
 #include "Rig3D\Engine.h"
 #include "Rig3D\Graphics\Interface\IScene.h"
-#include "Rig3D\Graphics\DirectX11\DX3D11Renderer.h"
 #include "Rig3D\Graphics\Interface\IRenderContext.h"
 #include "Rig3D\Graphics\Interface\IMesh.h"
 #include "Rig3D\Graphics\Interface\IShader.h"
@@ -95,7 +94,7 @@ public:
 	LinearAllocator			mAllocator;
 
 	MeshLibrary<LinearAllocator>	mMeshLibrary;
-	IRenderer*						mRenderer;
+	TSingleton<IRenderer, DX3D11Renderer>*						mRenderer;
 	IMesh*							mCubeMesh;
 	IMesh*							mQuadMesh;
 
@@ -147,7 +146,7 @@ public:
 
 	void VInitialize() override
 	{
-		mRenderer = &DX3D11Renderer::SharedInstance();
+		mRenderer = mEngine->GetRenderer();
 		mRenderer->SetDelegate(this);
 
 		mRenderer->VCreateRenderContext(&mRenderContext, &mAllocator);
@@ -423,7 +422,7 @@ public:
 
 		mRenderer->VDrawIndexed(0, mQuadMesh->GetIndexCount());
 
-		ID3D11DeviceContext* deviceContext = static_cast<DX3D11Renderer*>(mRenderer)->GetDeviceContext();
+		ID3D11DeviceContext* deviceContext = mRenderer->GetDeviceContext();
 		ID3D11ShaderResourceView* nullSRV[2] = { 0, 0 };
 		deviceContext->PSSetShaderResources(0, 2, nullSRV);
 	}
@@ -457,7 +456,7 @@ public:
 		mRenderer->VBindMesh(mQuadMesh);
 		mRenderer->VDrawIndexed(0, mQuadMesh->GetIndexCount());
 
-		ID3D11DeviceContext* deviceContext = static_cast<DX3D11Renderer*>(mRenderer)->GetDeviceContext();
+		ID3D11DeviceContext* deviceContext = mRenderer->GetDeviceContext();
 		ID3D11ShaderResourceView* nullSRV[2] = { 0, 0 };
 		deviceContext->PSSetShaderResources(0, 2, nullSRV);
 	}
@@ -497,8 +496,8 @@ public:
 		
 		// RTV0 : SceneRTV
 		// RTV1 : BlurRTV
-		mRenderer->VCreateContextResourceTargets(mRenderContext, 2);
-		mRenderer->VCreateContextDepthResourceTarget(mRenderContext);
+		mRenderer->VCreateContextResourceTargets(mRenderContext, 2, mRenderer->GetWindowWidth(), mRenderer->GetWindowHeight());
+		mRenderer->VCreateContextDepthResourceTarget(mRenderContext, mRenderer->GetWindowWidth(), mRenderer->GetWindowHeight());
 	}
 
 	void VShutdown() override
