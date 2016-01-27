@@ -830,6 +830,24 @@ void DX3D11Renderer::VLoadVertexShader(IShader* vertexShader, const char* filena
 
 	mDevice->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &dxShader->mVertexShader);
 	
+	LoadInputLayout(vertexShader, vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), inputElements, count);
+
+	ReleaseMacro(vsBlob);
+}
+
+void DX3D11Renderer::LoadVertexShader(IShader* vertexShader, void* byteCode, size_t byteSize, InputElement* inputElements, const uint32_t& count)
+{
+	DX11Shader* dxShader = reinterpret_cast<DX11Shader*>(vertexShader);
+
+	mDevice->CreateVertexShader(byteCode, byteSize, nullptr, &dxShader->mVertexShader);
+
+	LoadInputLayout(dxShader, byteCode, byteSize, inputElements, count);
+}
+
+void DX3D11Renderer::LoadInputLayout(IShader* vertexShader, void* byteCode, size_t byteSize, InputElement* inputElements, const uint32_t& count)
+{
+	DX11Shader* dxShader = reinterpret_cast<DX11Shader*>(vertexShader);
+
 	// Input Layout
 	D3D11_INPUT_ELEMENT_DESC* inputDescription = new D3D11_INPUT_ELEMENT_DESC[count];
 
@@ -870,11 +888,10 @@ void DX3D11Renderer::VLoadVertexShader(IShader* vertexShader, const char* filena
 		}
 	}
 
-	mDevice->CreateInputLayout(inputDescription, count, vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &dxShader->mInputLayout);
-
-	ReleaseMacro(vsBlob);
+	mDevice->CreateInputLayout(inputDescription, count, byteCode, byteSize, &dxShader->mInputLayout);
 	delete[] inputDescription;
 }
+
 
 void DX3D11Renderer::VLoadVertexShader(IShader* vertexShader, const char* filename, LinearAllocator* allocator)
 {
@@ -934,6 +951,13 @@ void DX3D11Renderer::VLoadPixelShader(IShader* pixelShader, const char* filename
 	mDevice->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &dxShader->mPixelShader);
 
 	ReleaseMacro(psBlob);
+}
+
+void DX3D11Renderer::VLoadPixelShader(IShader* pixelShader, void* byteCode, size_t byteSize)
+{
+	DX11Shader* dxShader = reinterpret_cast<DX11Shader*>(pixelShader);
+
+	mDevice->CreatePixelShader(byteCode, byteSize, nullptr, &dxShader->mPixelShader);
 }
 
 void DX3D11Renderer::SetVertexShaderInputLayout(ID3D11ShaderReflection* reflection, ID3DBlob* vsBlob, D3D11_SHADER_DESC* shaderDesc, DX11Shader* vertexShader)

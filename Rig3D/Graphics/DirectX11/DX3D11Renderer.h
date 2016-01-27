@@ -122,13 +122,23 @@ namespace Rig3D
 #pragma endregion 
 
 #pragma region Shader
-
+		// Allocate
 		void	VCreateShader(IShader** shader, LinearAllocator* allocator);
+		
+		// VS
 		void	VLoadVertexShader(IShader* vertexShader, const char* filename, InputElement* inputElements, const uint32_t& count);
+		void	LoadVertexShader(IShader* vertexShader, void* byteCode, size_t byteSize, InputElement* inputElements, const uint32_t& count);
+
+		// IL
+		void	LoadInputLayout(IShader* vertexShader, void* byteCode, size_t byteSize, InputElement* inputElements, const uint32_t& count);
+
 		void	VLoadVertexShader(IShader* vertexShader, const char* filename, LinearAllocator* allocator);
 		void	VLoadVertexShader(IShader* vertexShader, const char* filename);
+
+		// PS
 		void	VLoadPixelShader(IShader* vertexShader, const char* filename, LinearAllocator* allocator);
 		void	VLoadPixelShader(IShader* pixelShader, const char* filename);
+		void	VLoadPixelShader(IShader* pixelShader, void* byteCode, size_t byteSize);
 
 		void	VSetInputLayout(IShader* vertexShader);
 		void	VSetVertexShaderInputLayout(IShader* vertexShader);
