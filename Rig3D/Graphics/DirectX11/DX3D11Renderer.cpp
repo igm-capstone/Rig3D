@@ -835,7 +835,7 @@ void DX3D11Renderer::VLoadVertexShader(IShader* vertexShader, const char* filena
 	ReleaseMacro(vsBlob);
 }
 
-void DX3D11Renderer::LoadVertexShader(IShader* vertexShader, void* byteCode, size_t byteSize, InputElement* inputElements, const uint32_t& count)
+void DX3D11Renderer::LoadVertexShader(IShader* vertexShader, const void* byteCode, size_t byteSize, InputElement* inputElements, const uint32_t& count)
 {
 	DX11Shader* dxShader = reinterpret_cast<DX11Shader*>(vertexShader);
 
@@ -844,7 +844,7 @@ void DX3D11Renderer::LoadVertexShader(IShader* vertexShader, void* byteCode, siz
 	LoadInputLayout(dxShader, byteCode, byteSize, inputElements, count);
 }
 
-void DX3D11Renderer::LoadInputLayout(IShader* vertexShader, void* byteCode, size_t byteSize, InputElement* inputElements, const uint32_t& count)
+void DX3D11Renderer::LoadInputLayout(IShader* vertexShader, const void* byteCode, size_t byteSize, InputElement* inputElements, const uint32_t& count)
 {
 	DX11Shader* dxShader = reinterpret_cast<DX11Shader*>(vertexShader);
 
@@ -953,7 +953,7 @@ void DX3D11Renderer::VLoadPixelShader(IShader* pixelShader, const char* filename
 	ReleaseMacro(psBlob);
 }
 
-void DX3D11Renderer::VLoadPixelShader(IShader* pixelShader, void* byteCode, size_t byteSize)
+void DX3D11Renderer::VLoadPixelShader(IShader* pixelShader, const void* byteCode, size_t byteSize)
 {
 	DX11Shader* dxShader = reinterpret_cast<DX11Shader*>(pixelShader);
 
