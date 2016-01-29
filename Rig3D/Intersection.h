@@ -7,6 +7,30 @@
 
 namespace Rig3D
 {
+
+#pragma region Closest Point Tests
+
+	template<class Vector>
+	void ClosestAABBPointToPoint(const AABB<Vector>& aabb, const Vector& point, Vector& cp)
+	{
+		int numElements = sizeof(Vector) / sizeof(float);
+
+		for (int i = 0; i < numElements; i++)
+		{
+			float v = point[i];
+			Vector min = aabb.origin - aabb.halfSize;
+			Vector max = aabb.origin + aabb.halfSize;
+		
+			if (v < min[i]) v = min[i];
+			if (v > max[i]) v = max[i];
+			cp[i] = v;
+		}
+	}
+
+#pragma endregion 
+
+#pragma region Ray - Primitive Tests
+
 	template<class Vector>
 	int IntersectRayPlane(const Ray<Vector>& ray, const Plane<Vector>& plane, Vector& poi, float& t)
 	{
@@ -161,6 +185,9 @@ namespace Rig3D
 		return 1;
 	}
 
+#pragma endregion 
+
+#pragma region Sphere - Primitive Tests
 
 	template<class Vector>
 	int IntersectSpherePlane(const Sphere<Vector>& sphere, const Plane<Vector>& plane)
@@ -253,6 +280,20 @@ namespace Rig3D
 	}
 
 	template<class Vector>
+	int IntersectSphereAABB(const Sphere<Vector>& sphere, const AABB<Vector>& aabb, Vector& cp)
+	{
+		// Get closest point on AABB to sphere center
+		ClosestAABBPointToPoint(aabb, sphere.origin, cp);
+
+		Vector d = cp - sphere.origin;
+		return cliqCity::graphicsMath::dot(d, d) <= sphere.radius * sphere.radius;
+	}
+
+#pragma endregion 
+
+#pragma region AABB - Primitive Tests
+
+	template<class Vector>
 	int IntersectAABBAABB(AABB<Vector> aabb0, AABB<Vector> aabb1)
 	{
 		int numElements = sizeof(Vector) / sizeof(float);
@@ -272,4 +313,6 @@ namespace Rig3D
 
 		return 1;
 	}
+
+#pragma endregion 
 }
